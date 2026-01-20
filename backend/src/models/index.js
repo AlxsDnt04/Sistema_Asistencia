@@ -1,14 +1,14 @@
-const { sequelize } = require('../config/database');
+const sequelize = require('../config/database');
 const Usuario = require('./Usuario');
 const Materia = require('./Materia');
 const Asistencia = require('./Asistencia');
 
-// Definir Relaciones
-// 1. Un profesor puede tener muchas materias
+// Relaciones
+// Un profesor puede tener muchas materias
 Usuario.hasMany(Materia, { foreignKey: 'profesorId', as: 'materias' });
 Materia.belongsTo(Usuario, { foreignKey: 'profesorId', as: 'profesor' });
 
-// 2. Relación Asistencia
+// relación Asistencia
 // Una asistencia pertenece a un Estudiante
 Asistencia.belongsTo(Usuario, { foreignKey: 'usuarioId', as: 'estudiante' });
 Usuario.hasMany(Asistencia, { foreignKey: 'usuarioId' });

@@ -19,12 +19,15 @@ exports.login = async (req, res) => {
     }
 
     // Generar Token (JWT)
-    // Este token es que usará la app para hablar con el servidor
     const token = jwt.sign(
-      { id: usuario.id, rol: usuario.rol, nombre: usuario.nombre },
-      'SECRETO_SUPER_SECRETO', // En un proyecto real, esto va en .env
-      { expiresIn: '12h' }
-    );
+    { 
+        id: usuario.id,    
+        email: usuario.email, 
+        rol: usuario.rol 
+    }, 
+    'TU_SECRETO_SUPER_SEGURO', // La misma clave que en el middleware
+    { expiresIn: '12h' }
+);
 
     res.json({
       mensaje: 'Login exitoso',

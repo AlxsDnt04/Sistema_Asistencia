@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const sequelize  = require('../config/database');
 
 const Usuario = sequelize.define('Usuario', {
   id: {
@@ -24,7 +24,7 @@ const Usuario = sequelize.define('Usuario', {
     type: DataTypes.ENUM('profesor', 'estudiante'),
     defaultValue: 'estudiante'
   },
-  device_id: { // Para la seguridad extra
+  device_id: { // seguridad extra
     type: DataTypes.STRING,
     allowNull: true
   }

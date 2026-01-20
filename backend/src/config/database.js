@@ -1,19 +1,24 @@
+// backend/src/config/database.js
 const { Sequelize } = require('sequelize');
+require('dotenv').config(); 
 
-// Configuración para Laragon (Usuario: root, Pass: vacío)
-const sequelize = new Sequelize('asistencia_db', 'root', '', {
-  host: 'localhost',
-  dialect: 'mysql',
-  logging: false, 
-});
+// Configuración de la conexión a MySQL
+const sequelize = new Sequelize(
+    'asistencia_db', // Nombre de base de datos
+    'root',          // Usuario (por defecto en Laragon es 'root')
+    '',              // Contraseña (por defecto en Laragon es vacía)
+    {
+        host: 'localhost',
+        dialect: 'mysql',
+        logging: false, 
+        timezone: '-05:00', 
+    }
+);
 
-const verificarConexion = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('Conexión a MySQL exitosa.');
-  } catch (error) {
-    console.error('Error conectando a la base de datos:', error);
-  }
-};
+// Probar la conexión (Opcional, ayuda a depurar)
+sequelize.authenticate()
+    .then(() => console.log('✔ Conexión a MySQL establecida.'))
+    .catch(err => console.error('❗ Error de conexión a MySQL:', err));
 
-module.exports = { sequelize, verificarConexion };
+// IMPORTANTE: Exportamos la instancia DIRECTAMENTE
+module.exports = sequelize;

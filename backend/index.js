@@ -1,29 +1,62 @@
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const cors = require('cors');
-const { sequelize } = require('./src/models');
+const jwt = require('jsonwebtoken'); 
+const db = require('./src/config/database');
 const authRoutes = require('./src/routes/authRoutes');
+const asistenciaRoutes = require('./src/routes/asistenciaRoutes'); 
 
+// Inicializar App
 const app = express();
-const PORT = 3000; // El puerto donde escuchará el servidor
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: { origin: "*" }
+});
 
-// Middlewares (Para que el servidor entienda JSON y acepte peticiones del celular)
 app.use(cors());
 app.use(express.json());
 
-// usar rutas
+// Rutas API
 app.use('/api/auth', authRoutes);
+// 2. USAR LA RUTA DE ASISTENCIA
+app.use('/api/asistencia', asistenciaRoutes); 
 
-// Ruta de prueba
-app.get('/', (req, res) => {
-  res.json({ mensaje: '¡Servidor funcionando correctamente!' });
+// --- LÓGICA DEL QR ---
+let currentQR = ''; 
+
+const generarQR = () => {
+    // 3. 2m (120s) PARA EVITAR ERRORES DE TIEMPO
+    const token = jwt.sign(
+        { timestamp: new Date().getTime() }, 
+        'TU_SECRETO_SUPER_SEGURO', 
+        { expiresIn: '2m' } 
+    );
+    
+    currentQR = token; 
+    io.emit('qr-code', currentQR); 
+    console.log('🔄 Nuevo QR generado');
+};
+
+generarQR();
+setInterval(generarQR, 10000); // El dibujo cambia cada 10s, pero el token vale por 2m
+
+// Compartir 'io' para que el controlador pueda usarlo
+app.set('socketio', io);
+
+io.on('connection', (socket) => {
+    console.log('⚡ Cliente conectado ID:', socket.id);
+    if (currentQR) {
+        socket.emit('qr-code', currentQR);
+    }
+    socket.on('disconnect', () => {
+        console.log('Cliente desconectado');
+    });
 });
 
-// Iniciar servidor
-app.listen(PORT, async () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
-  try{
-  await sequelize.sync({force: false});
-  console.log('Tablas sincronizadas correctamente.');
-  }catch(error){
-    console.error('Error al sincronizar tablas:', error);}
-});
+const PORT = 3000;
+db.sync().then(() => {
+    server.listen(PORT, () => {
+        console.log(`✔ Servidor corriendo en http://localhost:${PORT}`);
+    });
+}).catch(err => console.log('Error BD:', err));
