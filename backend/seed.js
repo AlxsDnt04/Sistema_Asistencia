@@ -1,10 +1,11 @@
-// inserta datos de prueba (solo ejecuta una vez)
 const { sequelize, Usuario, Materia } = require('./src/models');
 const bcrypt = require('bcrypt');
 
 const sembrarDatos = async () => {
   try {
-    await sequelize.sync({ force: true }); // BORRA Y CREA LAS TABLAS DE CERO
+    // BORRA Y RECREA TODA LA BASE DE DATOS
+    await sequelize.sync({ force: true });
+    console.log('🔄 Base de datos limpiada y sincronizada.');
 
     // 1. Crear Profesor
     const passwordProfesor = await bcrypt.hash('admin123', 10);
@@ -14,28 +15,41 @@ const sembrarDatos = async () => {
       password: passwordProfesor,
       rol: 'profesor'
     });
+    console.log('✅ Profesor creado: profe@test.com');
 
-    // 2. Crear Estudiante
+    // 2. Crear Materias 
+    const materias = await Materia.bulkCreate([
+      { nombre: 'Base de Datos I', codigo: 'BD-101', profesorId: profesor.id },
+      { nombre: 'Ingeniería de Software', codigo: 'IS-202', profesorId: profesor.id },
+      { nombre: 'Programación Web', codigo: 'WEB-303', profesorId: profesor.id }
+    ]);
+    console.log('✅ 3 Materias creadas.');
+
+    // 3. Crear Estudiantes
     const passwordEstudiante = await bcrypt.hash('alumno123', 10);
-    const estudiante = await Usuario.create({
-      nombre: 'Juan Perez',
-      email: 'juan@test.com',
-      password: passwordEstudiante,
-      rol: 'estudiante',
-      device_id: 'celular-juan-001'
-    });
+    
+    // Array de estudiantes
+    const estudiantesData = [
+      { nombre: 'Juan Perez', email: 'juan@test.com', rol: 'estudiante', device_id: 'dev-001' },
+      { nombre: 'Maria Gomez', email: 'maria@test.com', rol: 'estudiante', device_id: 'dev-002' },
+      { nombre: 'Luis Torres', email: 'luis@test.com', rol: 'estudiante', device_id: 'dev-003' },
+      { nombre: 'Ana Rivas', email: 'ana@test.com', rol: 'estudiante', device_id: null },
+      { nombre: 'Carlos Ruiz', email: 'carlos@test.com', rol: 'estudiante', device_id: null }
+    ];
 
-    // 3. Crear Materia
-    await Materia.create({
-      nombre: 'Laboratorio de Química I',
-      codigo: 'QUI-101',
-      profesorId: profesor.id // Asignar el profesor creado
-    });
+    // Agregamos la contraseña encriptada a cada uno
+    const estudiantesConPass = estudiantesData.map(est => ({
+      ...est,
+      password: passwordEstudiante
+    }));
 
-    console.log('Datos de prueba insertados correctamente');
+    await Usuario.bulkCreate(estudiantesConPass);
+    console.log(`✅ ${estudiantesData.length} Estudiantes creados.`);
+
+    console.log('🚀 ¡Semilla completada con éxito!');
     process.exit();
   } catch (error) {
-    console.error('Error al sembrar datos:', error);
+    console.error('❌ Error fatal al sembrar datos:', error);
     process.exit(1);
   }
 };

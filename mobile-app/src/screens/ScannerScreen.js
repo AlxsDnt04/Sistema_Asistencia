@@ -1,75 +1,67 @@
 // mobile-app/src/screens/ScannerScreen.js
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, Button, Alert, TouchableOpacity } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera'; // <--- NUEVO COMPONENTE
+import { Text, View, StyleSheet, TouchableOpacity, Alert, StatusBar } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons'; // Iconos bonitos
 import api from '../services/api';
 
 export default function ScannerScreen({ navigation }) {
-  // Hook moderno para permisos
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [usuario, setUsuario] = useState(null);
 
   useEffect(() => {
-    // Cargar datos del usuario guardado
     (async () => {
       const userStored = await AsyncStorage.getItem('usuario');
       if (userStored) setUsuario(JSON.parse(userStored));
     })();
   }, []);
 
-  // Manejo de permisos (Cargando / Denegado)
-  if (!permission) {
-    return <View style={styles.container}><Text>Cargando permisos...</Text></View>;
-  }
-
+  if (!permission) return <View style={styles.container} />;
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.text}>Necesitamos acceso a la cámara</Text>
-        <Button onPress={requestPermission} title="Dar Permiso" />
+        <Text style={styles.textPermiso}>Se requiere acceso a la cámara</Text>
+        <TouchableOpacity style={styles.btnPermiso} onPress={requestPermission}>
+          <Text style={styles.btnText}>Permitir Acceso</Text>
+        </TouchableOpacity>
       </View>
     );
   }
 
-  // Lógica cuando lee el QR
   const handleBarcodeScanned = ({ data }) => {
     if (scanned) return;
     setScanned(true);
-
-    Alert.alert(
-      "¡QR Detectado!",
-      `Token: ${data.substring(0, 15)}...`,
-      [
-        { text: "Cancelar", onPress: () => setScanned(false), style: "cancel" },
-        { text: "Registrar", onPress: () => registrarAsistencia(data) }
-      ]
-    );
+    // Vibración opcional aquí
+    registrarAsistencia(data);
   };
 
-  const registrarAsistencia = async (qrData) => { 
+  const registrarAsistencia = async (qrToken) => {
     try {
-      console.log("Enviando token:", qrData); 
-
-      // La URL debe apuntar a la ruta de asistencia, no de auth
-      // La clave del objeto debe ser 'qrToken' (igual que en el backend)
+      await api.post('/asistencia/registrar', { qrToken });
       
-      await api.post('/asistencia/registrar', { 
-        qrToken: qrData 
-      });
-
-      Alert.alert("✅ Éxito", "Tu asistencia ha sido registrada en la base de datos.");
-      
-      // Volver al inicio
-      navigation.replace('Scanner'); // O navigation.navigate('Home') si tienes uno
-
+      Alert.alert(
+        "✅ ¡Excelente!",
+        "Tu asistencia ha sido registrada exitosamente.",
+        [{ text: "OK", onPress: () => setScanned(false) }]
+      );
     } catch (error) {
-      console.error(error);
-      const mensaje = error.response?.data?.message || "No se pudo conectar con el servidor";
-      Alert.alert("❌ Error", mensaje);
-    } finally {
-      setScanned(false);
+      console.log(error.response);
+      let mensaje = "No se pudo conectar con el servidor";
+      let titulo = "❌ Error";
+
+      if (error.response) {
+        // Capturamos el error 409 (Duplicado) o 400
+        mensaje = error.response.data.message;
+        if (error.response.status === 409) {
+            titulo = "⚠️ Atención";
+        }
+      }
+
+      Alert.alert(titulo, mensaje, [
+        { text: "Entendido", onPress: () => setScanned(false) }
+      ]);
     }
   };
 
@@ -80,43 +72,82 @@ export default function ScannerScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Nueva Cámara Moderna */}
-      <CameraView
-        style={StyleSheet.absoluteFillObject}
-        onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
-        barcodeScannerSettings={{
-          barcodeTypes: ["qr"],
-        }}
-      />
-
-      {/* Interfaz superpuesta (Overlay) */}
-      <View style={styles.overlay}>
-        <View style={styles.header}>
-            <Text style={styles.welcome}>Hola, {usuario?.nombre || 'Estudiante'}</Text>
+      <StatusBar barStyle="light-content" />
+      
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.greeting}>Hola,</Text>
+          <Text style={styles.username}>{usuario?.nombre || 'Estudiante'}</Text>
         </View>
+        <TouchableOpacity onPress={cerrarSesion} style={styles.btnLogout}>
+          <Ionicons name="log-out-outline" size={24} color="#FF6B6B" />
+        </TouchableOpacity>
+      </View>
 
-        <View style={styles.scanFrame} />
-        
-        <View style={styles.footer}>
-            <Text style={styles.instruction}>Apunta al código QR del profesor</Text>
-            <TouchableOpacity onPress={cerrarSesion} style={styles.logoutButton}>
-                <Text style={styles.logoutText}>Cerrar Sesión</Text>
-            </TouchableOpacity>
+      {/* CÁMARA */}
+      <View style={styles.cameraContainer}>
+        <CameraView
+          style={StyleSheet.absoluteFillObject}
+          onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+        />
+        {/* Marco visual */}
+        <View style={styles.scanFrame}>
+          <View style={styles.cornerTL} />
+          <View style={styles.cornerTR} />
+          <View style={styles.cornerBL} />
+          <View style={styles.cornerBR} />
         </View>
+      </View>
+
+      {/* FOOTER */}
+      <View style={styles.footer}>
+        <Text style={styles.instructionTitle}>Escanea el QR</Text>
+        <Text style={styles.instructionText}>
+          Apunta la cámara al código proyectado por el profesor para registrar tu asistencia.
+        </Text>
       </View>
     </View>
   );
 }
 
+// ESTILOS MEJORADOS "DARK MODE"
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: 'black' },
-  text: { color: 'white', textAlign: 'center', marginBottom: 20 },
-  overlay: { flex: 1, justifyContent: 'space-between', alignItems: 'center', paddingVertical: 50 },
-  header: { backgroundColor: 'rgba(0,0,0,0.6)', padding: 10, borderRadius: 20 },
-  welcome: { color: 'white', fontSize: 18, fontWeight: 'bold' },
-  scanFrame: { width: 250, height: 250, borderWidth: 2, borderColor: '#00FF00', backgroundColor: 'transparent', borderRadius: 20 },
-  footer: { alignItems: 'center', width: '100%' },
-  instruction: { color: 'white', marginBottom: 20, backgroundColor: 'rgba(0,0,0,0.6)', padding: 5, borderRadius: 5 },
-  logoutButton: { backgroundColor: 'red', padding: 10, borderRadius: 8, width: 150, alignItems: 'center' },
-  logoutText: { color: 'white', fontWeight: 'bold' }
+  container: { flex: 1, backgroundColor: '#0F172A' }, // Slate 900
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingTop: 60, 
+    paddingHorizontal: 25, 
+    marginBottom: 20 
+  },
+  greeting: { color: '#94A3B8', fontSize: 16 },
+  username: { color: 'white', fontSize: 24, fontWeight: 'bold' },
+  btnLogout: { padding: 10, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12 },
+  
+  cameraContainer: { 
+    flex: 1, 
+    marginHorizontal: 20, 
+    borderRadius: 30, 
+    overflow: 'hidden', 
+    elevation: 10,
+    borderColor: '#3B82F6',
+    borderWidth: 1
+  },
+  scanFrame: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // Esquinas del marco decorativo
+  cornerTL: { position: 'absolute', top: 40, left: 40, width: 40, height: 40, borderTopWidth: 4, borderLeftWidth: 4, borderColor: '#00FF9D' },
+  cornerTR: { position: 'absolute', top: 40, right: 40, width: 40, height: 40, borderTopWidth: 4, borderRightWidth: 4, borderColor: '#00FF9D' },
+  cornerBL: { position: 'absolute', bottom: 40, left: 40, width: 40, height: 40, borderBottomWidth: 4, borderLeftWidth: 4, borderColor: '#00FF9D' },
+  cornerBR: { position: 'absolute', bottom: 40, right: 40, width: 40, height: 40, borderBottomWidth: 4, borderRightWidth: 4, borderColor: '#00FF9D' },
+
+  footer: { padding: 30, alignItems: 'center' },
+  instructionTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  instructionText: { color: '#64748B', textAlign: 'center', fontSize: 14 },
+  
+  textPermiso: { color: 'white', fontSize: 16, marginBottom: 20 },
+  btnPermiso: { backgroundColor: '#2563EB', padding: 15, borderRadius: 10 },
+  btnText: { color: 'white', fontWeight: 'bold' }
 });

@@ -7,5 +7,7 @@ const authMiddleware = require('../middlewares/authMiddleware'); // Para saber q
 // Ruta: POST /api/asistencia/registrar
 // El middleware verifica que el alumno esté logueado (tenga token de usuario)
 router.post('/registrar', authMiddleware, asistenciaController.registrarAsistencia);
+router.get('/diario', authMiddleware, asistenciaController.obtenerReporteDiario);
+router.get('/historial', asistenciaController.obtenerHistorial);
 
 module.exports = router;

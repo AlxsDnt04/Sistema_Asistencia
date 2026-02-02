@@ -6,7 +6,11 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 // Definir la ruta POST para login
 router.post('/login', authController.login);
+
 // Definir la ruta protegida para registrar asistencia
 router.post('/registrar-asistencia', authMiddleware, asistenciaController.registrarAsistencia);
+
+// obtener alumnos
+router.get('/alumnos', authController.obtenerAlumnos);
 
 module.exports = router;

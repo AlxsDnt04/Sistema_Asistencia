@@ -29,7 +29,7 @@ const generarQR = () => {
     // 3. 2m (120s) PARA EVITAR ERRORES DE TIEMPO
     const token = jwt.sign(
         { timestamp: new Date().getTime() }, 
-        'TU_SECRETO_SUPER_SEGURO', 
+        'mi_clave_secreta_super_segura_123', 
         { expiresIn: '2m' } 
     );
     
