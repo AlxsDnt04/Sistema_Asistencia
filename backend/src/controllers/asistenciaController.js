@@ -237,3 +237,38 @@ exports.eliminarAsistencia = async (req, res) => {
         res.status(500).json({ message: "Error al eliminar" });
     }
 };
+
+// REPORTES
+exports.obtenerReporteMateria = async (req, res) => {
+    const { materiaId } = req.params;
+
+    try {
+        const materia = await Materia.findByPk(materiaId, {
+            include: [{ 
+                model: Usuario, 
+                as: 'profesor', 
+                attributes: ['nombre'] 
+            }]
+        });
+
+        if (!materia) return res.status(404).json({ message: 'Materia no encontrada' });
+
+        const asistencias = await Asistencia.findAll({
+            where: { materiaId },
+            include: [{ 
+                model: Usuario, 
+                attributes: ['id', 'nombre', 'cedula'] 
+            }],
+            order: [['fecha', 'ASC'], ['hora_registro', 'ASC']]
+        });
+
+        res.json({
+            materia: materia,
+            asistencias: asistencias
+        });
+
+    } catch (error) {
+        console.error("Error al generar reporte:", error);
+        res.status(500).json({ message: "Error al obtener datos del reporte" });
+    }
+};

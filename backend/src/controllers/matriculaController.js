@@ -1,5 +1,6 @@
 // src/controllers/matriculaController.js
-const { Usuario, Matricula } = require('../models');
+const { Usuario, Matricula, Materia } = require('../models');
+const { Op } = require("sequelize");
 const XLSX = require('xlsx');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
@@ -62,93 +63,135 @@ exports.desmatricular = async (req, res) => {
   }
 };
 
-// Carga Masiva desde Excel (Solo Admin)
+// Carga Masiva desde Excel
 exports.cargaMasiva = async (req, res) => {
-  const t = await sequelize.transaction(); 
-  
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No se subió ningún archivo' });
-    }
-
-    const materiaId = req.body.materiaId; 
-    const workbook = XLSX.readFile(req.file.path);
-    const sheetName = workbook.SheetNames[0];
-    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-    
-    let creados = 0;
-    let vinculados = 0;
-    let errores = 0;
-
-    for (const row of data) {
-      // Validar datos mínimos
-      if (!row.cedula || !row.email) {
-        errores++;
-        continue;
-      }
-
-      const cedula = row.cedula.toString();
-      const email = row.email.trim();
-      const nombre = row.nombre || 'Sin Nombre';
-      const apellido = row.apellido || 'Sin Apellido';
-
-      try {
-        // 1. Buscar o Crear Usuario (Estudiante)
-        let alumno = await Usuario.findOne({ where: { cedula } });
-
-        if (!alumno) {
-          // Crear hash de contraseña (usamos la cédula como pass inicial)
-          const salt = await bcrypt.genSalt(10);
-          const passwordHash = await bcrypt.hash(cedula, salt);
-
-          alumno = await Usuario.create({
-            nombre: `${nombre} ${apellido}`, // O separa campos según tu modelo
-            email: email,
-            cedula: cedula,
-            password: passwordHash,
-            rol: 'estudiante'
-          }, { transaction: t });
-          creados++;
+       try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No se subió ningún archivo' });
         }
 
-        // 2. Matricular en la materia (Si no está matriculado ya)
-        const matriculaExistente = await Matricula.findOne({ 
-            where: { estudianteId: alumno.id, materiaId } 
+        const materiaId = req.body.materiaId;
+        
+        // Validar que la materia exista
+        const materia = await Materia.findByPk(materiaId);
+        if(!materia) {
+             fs.unlinkSync(req.file.path);
+             return res.status(404).json({ message: 'La materia seleccionada no existe.' });
+        }
+
+        const workbook = XLSX.readFile(req.file.path);
+        const sheetName = workbook.SheetNames[0];
+        const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+        let stats = {
+            procesados: 0,
+            creados: 0,
+            existentes: 0,
+            matriculados: 0,
+            errores: []
+        };
+
+        for (const row of data) {
+            stats.procesados++;
+            
+            // 1. Limpieza y Validación básica de datos
+            // Aseguramos que cédula sea string y email minúsculas
+            const cedula = row.cedula ? String(row.cedula).trim() : null;
+            const email = row.email ? String(row.email).trim().toLowerCase() : null;
+            const nombre = row.nombre ? row.nombre.trim() : 'Sin Nombre';
+            const apellido = row.apellido ? row.apellido.trim() : '';
+            const nombreCompleto = `${nombre} ${apellido}`.trim();
+
+            if (!cedula || !email) {
+                stats.errores.push(`Fila ${stats.procesados}: Falta cédula o email.`);
+                continue;
+            }
+
+            try {
+                // 2. BUSCAR USUARIO EXISTENTE (Por Cédula O Email)
+                // Esto evita el error de "Duplicate entry"
+                let alumno = await Usuario.findOne({
+                    where: {
+                        [Op.or]: [
+                            { cedula: cedula },
+                            { email: email }
+                        ]
+                    }
+                });
+
+                if (alumno) {
+                    stats.existentes++;                 
+                    // Caso borde: El email existe pero con otra cédula (o viceversa)
+                    if (alumno.cedula !== cedula) {
+                        stats.errores.push(`Conflicto: El email ${email} ya pertenece al usuario con cédula ${alumno.cedula}. No se puede registrar cédula ${cedula}.`);
+                        continue; 
+                    }
+                } else {
+                    // 3. CREAR NUEVO USUARIO
+                    const salt = await bcrypt.genSalt(10);
+                    // Contraseña por defecto: La misma cédula
+                    const passwordHash = await bcrypt.hash(cedula, salt);
+
+                    alumno = await Usuario.create({
+                        nombre: nombreCompleto,
+                        email: email,
+                        cedula: cedula,
+                        password: passwordHash,
+                        rol: 'estudiante'
+                    });
+                    stats.creados++;
+                }
+
+                // 4. MATRICULAR EN LA MATERIA (Si no está ya matriculado)
+                const [matricula, created] = await Matricula.findOrCreate({
+                    where: { 
+                        estudianteId: alumno.id, 
+                        materiaId: materiaId 
+                    },
+                    defaults: {
+                        periodo: '2026-1' // O dinámico según fecha
+                    }
+                });
+
+                if (created) {
+                    stats.matriculados++;
+                }
+
+            } catch (err) {
+                console.error(`Error procesando alumno ${cedula}:`, err);
+                stats.errores.push(`Cédula ${cedula}: ${err.message}`);
+            }
+        }
+
+        // Limpiar archivo temporal
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+
+        // 5. RESPUESTA INTELIGENTE
+        // Construimos un mensaje resumen
+        let mensaje = "Proceso finalizado.";
+        if (stats.errores.length > 0) {
+            mensaje += " Algunos registros tuvieron problemas.";
+        } else {
+            mensaje += " Todos los alumnos fueron procesados correctamente.";
+        }
+
+        res.json({
+            message: mensaje,
+            detalles: {
+                total: stats.procesados,
+                nuevos: stats.creados,
+                encontrados: stats.existentes,
+                matriculadosAhora: stats.matriculados,
+                fallidos: stats.errores.length,
+                listaErrores: stats.errores 
+            }
         });
 
-        if (!matriculaExistente) {
-           await Matricula.create({ 
-               estudianteId: alumno.id, 
-               materiaId, 
-               periodo: '2026-1' // Esto podrías recibirlo del body también
-           }, { transaction: t });
-           vinculados++;
-        }
-
-      } catch (err) {
-        console.error(`Error con cédula ${cedula}:`, err);
-        errores++;
-      }
+    } catch (error) {
+        console.error("Error general en carga masiva:", error);
+        if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ message: 'Error crítico en el servidor procesando el archivo.' });
     }
-
-    await t.commit(); // Guardar cambios en DB
-    fs.unlinkSync(req.file.path); // Borrar archivo temp
-
-    res.json({ 
-      message: `Proceso finalizado.`,
-      detalles: {
-        nuevosUsuariosCreados: creados,
-        totalMatriculados: vinculados,
-        errores: errores
-      }
-    });
-
-  } catch (error) {
-    await t.rollback(); // Si falla algo grave, deshacer todo
-    console.error(error);
-    if (req.file) fs.unlinkSync(req.file.path);
-    res.status(500).json({ message: 'Error procesando el archivo Excel' });
-  }
 };
 
 exports.updateStudent = async (req, res) => {

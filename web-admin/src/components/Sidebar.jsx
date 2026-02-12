@@ -1,5 +1,5 @@
 import React, { useContext } from "react"; 
-import { LayoutDashboard, Users, FileText, LogOut, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, FileText, LogOut, BookOpen, GraduationCap } from "lucide-react";
 import { AuthContext } from "../context/AuthContext"; 
 
 export default function Sidebar({
@@ -72,6 +72,19 @@ export default function Sidebar({
           <BookOpen size={20} className="mr-3" />
           Cursos
         </button>
+        {user?.rol === 'admin' && (
+            <button
+            onClick={() => setVistaActual("profesores")}
+            className={`flex items-center w-full p-3 rounded-lg transition-all ${
+                vistaActual === "profesores" 
+                ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50" 
+                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+            }`}
+            >
+            <GraduationCap size={20} className="mr-3" />
+            Profesores
+            </button>
+        )}
       </nav>
 
       <div className="p-4 border-t border-slate-700">

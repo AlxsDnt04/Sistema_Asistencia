@@ -6,6 +6,7 @@ import Sidebar from "../components/Sidebar";
 import AlumnosView from "../components/AlumnosView";
 import ReportesView from "../components/ReportesView";
 import MateriasView from "../components/MateriasView";
+import ProfesoresView from "../components/ProfesoresView";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -388,8 +389,8 @@ export default function Dashboard() {
   const renderContenido = () => {
     if (vistaActual === "alumnos") return <AlumnosView usuarioId={user?.id} />;
     if (vistaActual === "reportes") return <ReportesView />;
-    if (vistaActual === "materias")
-      return <MateriasView usuarioId={user?.id} />;
+    if (vistaActual === "materias") return <MateriasView usuarioId={user?.id} />;
+    if (vistaActual === "profesores") return <ProfesoresView />; // Solo para admin
 
     // DASHBOARD DEFAULT
     return (
