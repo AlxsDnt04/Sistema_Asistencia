@@ -1,4 +1,5 @@
 // backend/src/middlewares/authMiddleware.js
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
 module.exports = (req, res, next) => {
@@ -15,7 +16,7 @@ module.exports = (req, res, next) => {
 
     try {
         // Verificar el token con la MISMA clave secreta que usas al crearlo
-        const decoded = jwt.verify(token, 'mi_clave_secreta_super_segura_123');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         // INYECTAR LOS DATOS EN LA PETICIÓN
         req.user = decoded; 

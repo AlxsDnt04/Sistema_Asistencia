@@ -234,7 +234,7 @@ exports.deleteStudent = async (req, res) => {
         // OPCIÓN 1: Borrado Físico (Cascada manual si no está configurada en BD)
         // Primero borramos sus asistencias y matrículas
         await Matricula.destroy({ where: { estudianteId: id } });
-        // await Asistencia.destroy({ where: { estudianteId: id } }); // Si tienes tabla asistencia
+        await Asistencia.destroy({ where: { estudianteId: id } }); // Si tiene tabla asistencia
         
         // Finalmente borramos al usuario
         await alumno.destroy();

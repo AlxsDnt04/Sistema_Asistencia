@@ -1,10 +1,9 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const cors = require('cors');
-const jwt = require('jsonwebtoken'); 
-const db = require('./src/config/database');
-const authRoutes = require('./src/routes/authRoutes');
+const express = require('express'); // ayuda a crear el servidor y manejar rutas
+const http = require('http'); // para crear un servidor HTTP que Socket.IO pueda usar
+const socketIo = require('socket.io'); // para comunicación en tiempo real entre el backend y el frontend
+const cors = require('cors'); // para permitir solicitudes desde el frontend (React) que corre en otro puerto
+const db = require('./src/config/database'); // Importar modelos para asegurar que las relaciones estén definidas
+const authRoutes = require('./src/routes/authRoutes'); // Rutas
 const asistenciaRoutes = require('./src/routes/asistenciaRoutes'); 
 const materiaRoutes = require('./src/routes/materiaRoutes');
 const alumnoRoutes = require('./src/routes/alumnoRoutes');
@@ -12,7 +11,7 @@ const matriculaRoutes = require('./src/routes/matriculaRoutes');
 const usuariosRoutes = require('./src/routes/usuariosRoutes');
 
 // Inicializar App
-const app = express();
+const app = express(); 
 const server = http.createServer(app);
 const io = socketIo(server, {
     cors: { origin: "*" }
