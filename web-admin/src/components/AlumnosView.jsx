@@ -1,5 +1,5 @@
-import { useState, useEffect, useContext, useRef } from "react";
-import axios from "axios";
+import { useState, useEffect, useContext, useRef, useCallback } from "react";
+import api from "../api/axiosConfig";
 import {
   Search,
   UserPlus,
@@ -17,151 +17,84 @@ import Swal from "sweetalert2";
 import { AuthContext } from "../context/AuthContext";
 
 export default function AlumnosView() {
-  const { user } = useContext(AuthContext); // Usamos el ID del contexto directamente
-  // Datos
-  const [materias, setMaterias] = useState([]);
+  // 1. CONSUMIMOS LAS MATERIAS GLOBALES DEL CONTEXTO
+  const { user, misMaterias, loadingMaterias } = useContext(AuthContext);
+
+  // Datos locales (Solo alumnos, las materias ya vienen del AuthContext)
   const [alumnos, setAlumnos] = useState([]);
 
   // Selecciones y Filtros
   const [materiaSeleccionada, setMateriaSeleccionada] = useState("");
-  const [busquedaAlumno, setBusquedaAlumno] = useState(""); // Filtro local de alumnos
-  const [filtroMateriaAdmin, setFiltroMateriaAdmin] = useState(""); // Filtro de materias (Solo Admin)
+  const [busquedaAlumno, setBusquedaAlumno] = useState("");
+  const [filtroMateriaAdmin, setFiltroMateriaAdmin] = useState("");
 
   // Inputs de formularios
   const [cedulaInput, setCedulaInput] = useState("");
-  const fileInputRef = useRef(null); // Referencia para limpiar el input file
+  const fileInputRef = useRef(null);
 
-  // edidion del alumno
-  const [editingStudent, setEditingStudent] = useState(null); // Para el modal
+  // Edición del alumno
+  const [editingStudent, setEditingStudent] = useState(null);
   const [editForm, setEditForm] = useState({
     nombre: "",
     email: "",
     cedula: "",
   });
 
-  // UI States
-  const [cargando, setCargando] = useState(false);
-
-  // 1. CARGAR MATERIAS (Lógica Admin vs Profesor)
+  // Autoseleccionar la primera materia global si está disponible
   useEffect(() => {
-    const cargarMaterias = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/api/materias", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+    if (misMaterias && misMaterias.length > 0 && !materiaSeleccionada) {
+      setMateriaSeleccionada(misMaterias[0].id);
+    }
+  }, [misMaterias, materiaSeleccionada]);
 
-        let data = res.data;
-
-        // Si NO es admin, filtramos solo las del profesor
-        if (user.rol !== "admin") {
-          data = data.filter((m) => m.profesorId === user.id);
-        }
-
-        setMaterias(data);
-
-        // Auto-seleccionar la primera si existe
-        if (data.length > 0) {
-          setMateriaSeleccionada(data[0].id);
-        }
-      } catch (error) {
-        console.error("Error cargando materias", error);
-        Swal.fire("Error", "No se pudieron cargar las materias", "error");
-      }
-    };
-
-    if (user) cargarMaterias();
-  }, [user]); // Dependencia: usuario del contexto
-
-  // 2. CARGAR ALUMNOS (Cuando cambia la materia)
-  useEffect(() => {
-    const cargarAlumnos = async () => {
-      if (!materiaSeleccionada) {
-        setAlumnos([]);
-        return;
-      }
-
-      setCargando(true);
-      try {
-        const res = await axios.get(
-          `http://localhost:3000/api/alumnos/materia/${materiaSeleccionada}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          },
-        );
-        setAlumnos(res.data);
-      } catch (error) {
-        console.error("Error cargando alumnos:", error);
-        setAlumnos([]);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    cargarAlumnos();
+  // 2. CARGAR ALUMNOS USANDO TU INSTANCIA 'api' (Sin headers manuales)
+  const cargarAlumnos = useCallback(async () => {
+    if (!materiaSeleccionada) return;
+    try {
+      const res = await api.get(`/alumnos/materia/${materiaSeleccionada}`);
+      setAlumnos(res.data);
+    } catch (error) {
+      console.error("Error al cargar alumnos:", error);
+    }
   }, [materiaSeleccionada]);
 
-  // --- LÓGICA DE FILTRADO ---
+  useEffect(() => {
+    cargarAlumnos();
+  }, [cargarAlumnos]);
 
-  // 1. Filtrar Materias (Para el selector del Admin)
-  const materiasVisibles = materias.filter(
-    (m) =>
-      m.nombre.toLowerCase().includes(filtroMateriaAdmin.toLowerCase()) ||
-      m.codigo.toLowerCase().includes(filtroMateriaAdmin.toLowerCase()),
-  );
-
-  // 2. Filtrar Alumnos (Búsqueda en tabla)
-  const alumnosVisibles = alumnos.filter((alumno) => {
-    const texto = busquedaAlumno.toLowerCase();
-    return (
-      alumno.nombre.toLowerCase().includes(texto) ||
-      alumno.email.toLowerCase().includes(texto) ||
-      (alumno.cedula || "").includes(texto)
-    );
-  });
-
-  // --- HANDLERS (ACCIONES) ---
-
-  const handleVincular = async (e) => {
+  // 3. MATRICULAR ALUMNO POR CÉDULA
+  const handleMatricular = async (e) => {
     e.preventDefault();
-    if (!cedulaInput) return;
+    if (!materiaSeleccionada) return;
 
     try {
-      await axios.post(
-        "http://localhost:3000/api/matricula/vincular",
-        { cedula: cedulaInput, materiaId: materiaSeleccionada },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
+      await api.post("/matricula/vincular", {
+        cedula: cedulaInput,
+        materiaId: materiaSeleccionada,
+      });
 
       Swal.fire({
         icon: "success",
-        title: "Vinculado",
-        text: "Alumno agregado correctamente",
-        timer: 1500,
+        title: "¡Éxito!",
+        text: "Estudiante matriculado correctamente en este curso.",
+        timer: 2000,
         showConfirmButton: false,
       });
+
       setCedulaInput("");
-      // Recargar alumnos sin recargar página
-      const res = await axios.get(
-        `http://localhost:3000/api/alumnos/materia/${materiaSeleccionada}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
-      setAlumnos(res.data);
+      cargarAlumnos();
     } catch (error) {
-      Swal.fire(
-        "Error",
-        error.response?.data?.message || "No se pudo vincular",
-        "error",
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.response?.data?.error ||
+          "No se pudo vincular, verifique la cédula o el estudiante no esta registrado.",
+      });
     }
   };
 
+  // 4. DESMATRICULAR/ELIMINAR ALUMNO DEL CURSO
   const handleDesmatricular = async (estudianteId) => {
     const result = await Swal.fire({
       title: "¿Desvincular alumno?",
@@ -176,16 +109,13 @@ export default function AlumnosView() {
 
     if (result.isConfirmed) {
       try {
-        await axios.delete(
-          `http://localhost:3000/api/matricula/${estudianteId}/${materiaSeleccionada}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
+        await api.delete(`/matricula/${estudianteId}/${materiaSeleccionada}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-        );
+        });
 
-        // Actualizar estado localmente (más rápido que recargar API)
+        // Actualizar estado localmente (si usas setAlumnos o la variable que tengas para la lista)
         setAlumnos((prev) => prev.filter((a) => a.id !== estudianteId));
 
         Swal.fire("Eliminado", "El alumno ha sido desvinculado.", "success");
@@ -196,9 +126,48 @@ export default function AlumnosView() {
     }
   };
 
+  const handleDeleteSystem = async (id) => {
+  const result = await Swal.fire({
+    title: "¿Eliminar alumno del sistema?",
+    text: "¡Atención! Esto eliminará al usuario de TODO el sistema de asistencia de forma permanente, incluyendo sus matrículas y registros en OTRAS materias. Esta acción no se puede deshacer.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",     
+    cancelButtonColor: "#3085d6",   
+    confirmButtonText: "Sí, eliminar permanentemente",
+    cancelButtonText: "Cancelar",
+  });
+
+  // Si el administrador confirma la acción
+  if (result.isConfirmed) {
+    try {
+      // Petición usando tu Axios inyectado
+      await api.delete(`/matricula/alumnos/${id}`);
+      
+      // Quitar de la lista visualmente en el estado local
+      setAlumnos((prev) => prev.filter((al) => al.id !== id));
+      
+      // Alerta de éxito al terminar
+      Swal.fire(
+        "¡Eliminado!",
+        "El estudiante ha sido borrado del sistema por completo.",
+        "success"
+      );
+    } catch (error) {
+      console.error("Error al eliminar usuario del sistema:", error);
+      Swal.fire(
+        "Error",
+        "No se pudo eliminar al usuario. Es posible que tenga dependencias activas o problemas de red.",
+        "error"
+      );
+    }
+  }
+};
+
+  // 5. CARGA MASIVA MEDIANTE EXCEL / CSV
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !materiaSeleccionada) return;
 
     const formData = new FormData();
     formData.append("archivoExcel", file);
@@ -206,353 +175,311 @@ export default function AlumnosView() {
 
     try {
       Swal.fire({
-        title: "Procesando Excel...",
+        title: "Cargando estudiantes...",
+        text: "Por favor espere",
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
 
-      const response = await axios.post(
-        "http://localhost:3000/api/matricula/masiva",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "multipart/form-data",
-          },
-        },
-      );
+      await api.post("/matricula/masiva", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-      Swal.fire("Reporte de Carga", response.data.message, "info");
+      Swal.fire({
+        icon: "success",
+        title: "¡Carga Masiva Exitosa!",
+        text: "Los estudiantes se han registrado y matriculado correctamente.",
+      });
 
-      // Limpiar input file
-      if (fileInputRef.current) fileInputRef.current.value = "";
-
-      // Recargar tabla
-      const res = await axios.get(
-        `http://localhost:3000/api/alumnos/materia/${materiaSeleccionada}`,
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
-      setAlumnos(res.data);
+      cargarAlumnos();
     } catch (error) {
-      console.error("Error en carga masiva:", error);
-      Swal.fire("Error", "Falló la carga masiva", "error");
+      Swal.fire({
+        icon: "error",
+        title: "Error en la carga",
+        text:
+          error.response?.data?.error ||
+          "Asegúrate de que el formato sea correcto.",
+      });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  const handleEditClick = (alumno) => {
+  // 6. ACTUALIZAR INFORMACIÓN DEL ALUMNO (EDICIÓN)
+  const handleUpdateStudent = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/matricula/alumnos/${editingStudent.id}`, editForm);
+
+      Swal.fire({
+        icon: "success",
+        title: "¡Actualizado!",
+        text: "Datos del estudiante actualizados correctamente.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+
+      setEditingStudent(null);
+      cargarAlumnos();
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text:
+          error.response?.data?.error || "No se pudieron actualizar los datos.",
+      });
+    }
+  };
+
+  const abrirModalEdicion = (alumno) => {
     setEditingStudent(alumno);
     setEditForm({
       nombre: alumno.nombre,
       email: alumno.email,
-      cedula: alumno.cedula || "",
+      cedula: alumno.cedula,
     });
   };
 
-  const handleUpdateStudent = async (e) => {
-    e.preventDefault();
-    if (!editingStudent) return;
+  // Filtros de búsqueda locales
+  const alumnosFiltrados = alumnos.filter((alumno) => {
+    const coincideBusqueda =
+      alumno.nombre.toLowerCase().includes(busquedaAlumno.toLowerCase()) ||
+      alumno.cedula.includes(busquedaAlumno);
+    return coincideBusqueda;
+  });
 
-    try {
-      // Usamos la ruta que creamos: /matricula/alumnos/:id
-      await axios.put(
-        `http://localhost:3000/api/matricula/alumnos/${editingStudent.id}`,
-        editForm,
-      );
-
-      // Actualizamos la lista localmente para no recargar
-      setAlumnos((prev) =>
-        prev.map((al) =>
-          al.id === editingStudent.id ? { ...al, ...editForm } : al,
-        ),
-      );
-
-      setEditingStudent(null); // Cerrar modal
-      alert("Alumno actualizado correctamente"); // O usa un toast/notificación
-    } catch (error) {
-      console.error(error);
-      alert("Error al actualizar alumno");
-    }
-  };
-
-  // --- C. ELIMINAR DEL SISTEMA (DELETE) ---
-  const handleDeleteSystem = async (id) => {
-    if (
-      !window.confirm(
-        "¿Estás seguro? Esto eliminará al usuario DE TODO EL SISTEMA, incluyendo sus notas y asistencias en OTRAS materias.",
-      )
-    ) {
-      return;
-    }
-
-    try {
-      await axios.delete(`http://localhost:3000/api/matricula/alumnos/${id}`);
-      // Quitar de la lista visualmente
-      setAlumnos((prev) => prev.filter((al) => al.id !== id));
-      alert("Usuario eliminado del sistema permanentemente.");
-    } catch (error) {
-      console.error(error);
-      alert("Error al eliminar usuario. Puede tener dependencias activas.");
-    }
-  };
+  const materiasParaAdmin =
+    user?.rol === "admin"
+      ? misMaterias.filter((m) =>
+          m.nombre.toLowerCase().includes(filtroMateriaAdmin.toLowerCase()),
+        )
+      : [];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Users className="w-8 h-8 text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-800">Gestión de Alumnos</h2>
-      </div>
+    <div className="space-y-6">
+      {/* Selector de Materia */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+            <BookOpen size={24} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-800">
+              Gestión de Estudiantes
+            </h2>
+            <p className="text-sm text-slate-500">
+              {user?.rol === "admin"
+                ? "Panel de Administrador"
+                : "Panel de Docente"}
+            </p>
+          </div>
+        </div>
 
-      {/* --- PANEL DE CONTROL SUPERIOR --- */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* COLUMNA IZQUIERDA: SELECCIÓN DE MATERIA */}
-          <div className="flex flex-col gap-3">
-            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <BookOpen className="w-4 h-4" />
-              Seleccionar Curso / Materia
-            </label>
-
-            {/* Buscador de materias (Solo Admin) */}
-            {user.rol === "admin" && (
-              <div className="relative">
-                <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar código o nombre de materia..."
-                  className="w-full pl-9 p-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
-                  value={filtroMateriaAdmin}
-                  onChange={(e) => setFiltroMateriaAdmin(e.target.value)}
-                />
-              </div>
-            )}
-
+        <div className="w-full md:w-72">
+          <label className="block text-xs font-bold uppercase text-slate-400 mb-1">
+            Seleccionar Curso
+          </label>
+          {loadingMaterias ? (
+            <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+          ) : (
             <select
-              className="w-full p-2.5 border border-gray-300 rounded-lg text-gray-700 bg-white shadow-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:border-blue-500 transition-colors cursor-pointer"
               value={materiaSeleccionada}
               onChange={(e) => setMateriaSeleccionada(e.target.value)}
             >
-              <option value="" className="text-gray-500">
-                -- Selecciona una materia --
-              </option>
-              {materiasVisibles.map((mat) => (
-                <option
-                  key={mat.id}
-                  value={mat.id}
-                  className="text-gray-900 font-medium"
-                >
-                  {mat.nombre} ({mat.codigo})
+              {misMaterias.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.nombre} ({m.codigo})
                 </option>
               ))}
-            </select>
-          </div>
-
-          {/* COLUMNA DERECHA: ACCIONES (Solo si hay materia) */}
-          {materiaSeleccionada && (
-            <div className="flex flex-col justify-end gap-4">
-              {/* 1. Vincular Individual */}
-              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                <label className="text-xs font-bold text-gray-500 mb-2 block uppercase">
-                  Vincular Estudiante
-                </label>
-                <form onSubmit={handleVincular} className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ingrese Cédula"
-                    className="flex-1 p-2 border border-gray-300 rounded text-sm focus:border-blue-500 outline-none text-gray-700"
-                    value={cedulaInput}
-                    onChange={(e) => setCedulaInput(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors text-sm font-medium"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Agregar
-                  </button>
-                </form>
-              </div>
-
-              {/* 2. Carga Masiva (Solo Admin) */}
-              {user.rol === "admin" && (
-                <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-2 mb-2">
-                      <label className="text-xs font-bold text-gray-500 block">
-                        <FileSpreadsheet className="w-8 h-8 inline-block mr-1" />
-                        IMPORTAR DESDE EXCEL
-                      </label>
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg px-2 py-1.5 text-xs text-blue-700 font-medium">
-                        💡 Encabezados: cedula, nombre, apellido, email
-                      </div>
-                    </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".xlsx, .xls"
-                      onChange={handleFileUpload}
-                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer"
-                    />
-                  </div>
-                  <Upload className="w-5 h-5 text-gray-400" />
-                </div>
+              {misMaterias.length === 0 && (
+                <option value="">No tienes cursos asignados</option>
               )}
-            </div>
+            </select>
           )}
         </div>
       </div>
 
-      {/* --- ÁREA DE TABLA Y BÚSQUEDA --- */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Barra de herramientas de la tabla */}
-        <div className="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center flex-wrap gap-4">
-          <h3 className="font-semibold text-gray-700">
-            Listado de Estudiantes
-          </h3>
+      {materiaSeleccionada && (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          {/* Formularios de Registro e Importación */}
+          <div className="space-y-6">
+            {/* Registro Individual */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <UserPlus size={18} className="text-blue-500" /> Vincular
+                Estudiante
+              </h3>
+              <form onSubmit={handleMatricular} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-600 mb-1">
+                    Número de Cédula
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 1725364758"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-slate-700 font-medium"
+                    value={cedulaInput}
+                    onChange={(e) => setCedulaInput(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer"
+                >
+                  <UserPlus size={18} /> Vincular
+                </button>
+              </form>
+            </div>
 
-          {/* Buscador dentro de la tabla */}
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar alumno..."
-              className="w-full pl-9 p-2 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-blue-500 outline-none text-gray-700"
-              value={busquedaAlumno}
-              onChange={(e) => setBusquedaAlumno(e.target.value)}
-              disabled={!materiaSeleccionada}
-            />
+            {/* Carga Masiva */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+              <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
+                <FileSpreadsheet size={18} className="text-emerald-500" /> Carga
+                Masiva (.csv)
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Sube un archivo separado por comas con las columnas:{" "}
+                <b>cedula, nombre, email</b>
+              </p>
+              <div className="relative border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-emerald-500 transition-colors">
+                <input
+                  type="file"
+                  accept=".csv"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <Upload size={24} className="text-slate-400 mx-auto mb-2" />
+                <span className="text-sm font-medium text-slate-600 block">
+                  Seleccionar archivo CSV
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
 
-        {materiaSeleccionada ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Cédula
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Nombre
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {cargando ? (
+          {/* Listado de Matriculados */}
+          <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                <Users size={18} className="text-blue-500" /> Alumnos
+                Matriculados ({alumnosFiltrados.length})
+              </h3>
+              <div className="relative w-full sm:w-64">
+                <Search
+                  size={16}
+                  className="absolute left-3 top-3 text-slate-400"
+                />
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o cédula..."
+                  className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 text-slate-700 font-medium"
+                  value={busquedaAlumno}
+                  onChange={(e) => setBusquedaAlumno(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-600">
+                <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-semibold">
                   <tr>
-                    <td
-                      colSpan="4"
-                      className="px-6 py-10 text-center text-gray-500 animate-pulse"
-                    >
-                      Cargando estudiantes...
-                    </td>
+                    <th className="px-6 py-3">Estudiante</th>
+                    <th className="px-6 py-3">Cédula</th>
+                    <th className="px-6 py-3 text-right">Acciones</th>
                   </tr>
-                ) : alumnosVisibles.length > 0 ? (
-                  alumnosVisibles.map((alumno) => (
-                    <tr
-                      key={alumno.id}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-6 py-4 text-sm text-gray-900 font-mono">
-                        {alumno.cedula || "S/N"}
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {alumnosFiltrados.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="px-6 py-8 text-center text-slate-400 italic"
+                      >
+                        No se encontraron estudiantes matriculados.
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {alumno.nombre}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {alumno.email}
-                      </td>
-                      <td className="p-4 flex gap-2 justify-end">
-                        {/* 1. BOTÓN EDITAR (Solo Admin) */}
-                        {user.rol === "admin" && (
+                    </tr>
+                  ) : (
+                    alumnosFiltrados.map((alumno) => (
+                      <tr
+                        key={alumno.id}
+                        className="hover:bg-slate-50/50 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-slate-900">
+                            {alumno.nombre}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {alumno.email}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-mono text-xs">
+                          {alumno.cedula}
+                        </td>
+                        <td className="px-6 py-4 text-right flex justify-end gap-3">
                           <button
-                            onClick={() => handleEditClick(alumno)}
-                            className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50 transition-colors"
-                            title="Editar datos del alumno"
+                            onClick={() => abrirModalEdicion(alumno)}
+                            className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                            title="Editar estudiante"
                           >
                             <Edit size={18} />
                           </button>
-                        )}
+                          <div className="flex space-x-2">
+                            {/* 1. BOTÓN DESMATRICULAR: Solo para profesores (o roles distintos a admin) */}
+                            {user?.rol !== "admin" && (
+                              <button
+                                onClick={() => handleDesmatricular(alumno.id)}
+                                className="text-yellow-600 hover:text-yellow-900 bg-yellow-100 hover:bg-yellow-200 px-3 py-1 rounded-md transition-colors"
+                              >
+                                Desvincular Curso
+                              </button>
+                            )}
 
-                        {/* 2. BOTÓN DESVINCULAR (Sacar de ESTA materia - Para todos) */}
-                        <button
-                          onClick={() => handleDesmatricular(alumno.id)}
-                          className="text-orange-500 hover:text-orange-700 p-1 rounded hover:bg-orange-50 transition-colors"
-                          title="Desvincular de esta materia (No borra usuario)"
-                        >
-                          {/* Cambié el icono a UserMinus para que se entienda que es "sacar del grupo" */}
-                          <UserMinus size={18} />
-                        </button>
-
-                        {/* 3. BOTÓN ELIMINAR SISTEMA (Solo Admin - Peligroso) */}
-                        {user.rol === "admin" && (
-                          <button
-                            onClick={() => handleDeleteSystem(alumno.id)}
-                            className="text-red-600 hover:text-red-800 p-1 rounded hover:bg-red-50 transition-colors border border-transparent hover:border-red-200"
-                            title="ELIMINAR DEL SISTEMA (Irreversible)"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="4"
-                      className="px-6 py-10 text-center text-gray-500"
-                    >
-                      {busquedaAlumno
-                        ? "No se encontraron alumnos con esa búsqueda."
-                        : "No hay alumnos inscritos en este curso."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="p-16 text-center text-gray-400 flex flex-col items-center">
-            <BookOpen className="w-12 h-12 mb-3 text-gray-300" />
-            <p>Selecciona un curso arriba para gestionar sus estudiantes.</p>
-          </div>
-        )}
-      </div>
-
-      {/* --- MODAL DE EDICIÓN --- */}
-      {editingStudent && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            {/* Encabezado Modal */}
-            <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-800">
-                Editar Alumno
-              </h3>
-              <button
-                onClick={() => setEditingStudent(null)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X size={20} />
-              </button>
+                            {/* 2. BOTÓN ELIMINAR SISTEMA: Solo visible para el Administrador */}
+                            {user?.rol === "admin" && (
+                              <button
+                                onClick={() => handleDeleteSystem(alumno.id)}
+                                className="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md transition-colors"
+                              >
+                                Eliminar del Sistema
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Formulario */}
-            <form onSubmit={handleUpdateStudent} className="p-6 space-y-4">
+      {/* MODAL DE EDICIÓN (Glassmorphism) */}
+      {editingStudent && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+            <button
+              onClick={() => setEditingStudent(null)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <h3 className="text-lg font-bold text-slate-800 mb-4">
+              Modificar Información General
+            </h3>
+
+            <form onSubmit={handleUpdateStudent} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Nombre Completo
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none text-slate-700 font-medium"
                   value={editForm.nombre}
                   onChange={(e) =>
                     setEditForm({ ...editForm, nombre: e.target.value })
@@ -562,12 +489,12 @@ export default function AlumnosView() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Correo Electrónico
                 </label>
                 <input
                   type="email"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none text-slate-700 font-medium"
                   value={editForm.email}
                   onChange={(e) =>
                     setEditForm({ ...editForm, email: e.target.value })
@@ -577,12 +504,12 @@ export default function AlumnosView() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   Cédula
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-700"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none text-slate-700 font-medium"
                   value={editForm.cedula}
                   onChange={(e) =>
                     setEditForm({ ...editForm, cedula: e.target.value })
@@ -591,23 +518,60 @@ export default function AlumnosView() {
                 />
               </div>
 
-              <div className="flex gap-3 mt-6 pt-4 border-t border-gray-50">
+              <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-bold cursor-pointer shadow-sm"
                 >
-                  <Save size={18} />
-                  Guardar
+                  <Save size={18} /> Guardar
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* FILTRO EXTRA PARA MODO ADMINISTRADOR */}
+      {user?.rol === "admin" && (
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <Search size={18} className="text-slate-500" /> Localizador Global
+            de Cursos
+          </h3>
+          <div className="relative mb-4">
+            <Search
+              size={16}
+              className="absolute left-3 top-3 text-slate-400"
+            />
+            <input
+              type="text"
+              placeholder="Filtrar catálogo completo de materias..."
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+              value={filtroMateriaAdmin}
+              onChange={(e) => setFiltroMateriaAdmin(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {materiasParaAdmin.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setMateriaSeleccionada(m.id)}
+                className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
+                  materiaSeleccionada == m.id
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {m.nombre}
+              </button>
+            ))}
           </div>
         </div>
       )}

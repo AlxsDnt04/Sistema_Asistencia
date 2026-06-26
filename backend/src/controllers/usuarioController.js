@@ -7,7 +7,7 @@ exports.getUsuarios = async (req, res) => {
         console.log("🔍 Buscando lista de usuarios...");
 
         const usuarios = await Usuario.findAll({
-            attributes: ["id", "nombre", "email", "rol"], 
+            attributes: ["id", "nombre", "email", "rol", "cedula"], 
             where: {
                  rol: ['docente', 'profesor', 'admin'] 
             }

@@ -14,7 +14,11 @@ const usuariosRoutes = require('./src/routes/usuariosRoutes');
 const app = express(); 
 const server = http.createServer(app);
 const io = socketIo(server, {
-    cors: { origin: "*" }
+    cors: {
+    origin: "http://localhost:5173", // explicitly allow your frontend
+    methods: ["GET", "POST"],
+    credentials: true
+  }
 });
 
 app.use(cors());

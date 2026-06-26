@@ -91,7 +91,7 @@ exports.obtenerEstudiantesPorMateria = async (req, res) => {
             include: [{
                 model: Usuario,
                 as: 'estudiantesInscritos', 
-                attributes: ['id', 'nombre', 'email', 'rol', 'device_id'],
+                attributes: ['id', 'nombre', 'email', 'rol'],
                 through: { attributes: [] } 
             }]
         });
