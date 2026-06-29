@@ -1,5 +1,5 @@
 // src/controllers/matriculaController.js
-const { Usuario, Matricula, Materia } = require('../models');
+const { Usuario, Matricula, Materia, Asistencia } = require('../models');
 const { Op } = require("sequelize");
 const XLSX = require('xlsx');
 const fs = require('fs');
@@ -231,10 +231,9 @@ exports.deleteStudent = async (req, res) => {
             return res.status(404).json({ message: "Alumno no encontrado" });
         }
 
-        // OPCIÓN 1: Borrado Físico (Cascada manual si no está configurada en BD)
-        // Primero borramos sus asistencias y matrículas
+        // Primero borramos sus matrículas y asistencias usando las columnas correctas de tu BD
         await Matricula.destroy({ where: { estudianteId: id } });
-        await Asistencia.destroy({ where: { estudianteId: id } }); // Si tiene tabla asistencia
+        await Asistencia.destroy({ where: { usuarioId: id } }); 
         
         // Finalmente borramos al usuario
         await alumno.destroy();

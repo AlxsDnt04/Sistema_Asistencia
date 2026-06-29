@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useCallback } from 'react';
+import api from '../api/axiosConfig'; // Cambiado a tu cliente configurado inteligente
 import { User, Plus, Edit, Trash2, X, Save, Search, ChevronLeft, ChevronRight, GraduationCap } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -23,285 +23,312 @@ export default function ProfesoresView() {
         rol: 'profesor'
     });
 
-    // Cargar datos
-    const cargarProfesores = async () => {
+    // 1. CARGAR DOCENTES USANDO INSTANCIA 'api' (Sin headers manuales)
+    const cargarProfesores = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:3000/api/usuarios', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            const res = await api.get('/usuarios');
             // Ordenar por ID descendente para ver los nuevos primero
             const ordenados = res.data.sort((a, b) => b.id - a.id);
             setProfesores(ordenados);
         } catch (error) {
-            console.error("Error cargando profesores", error);
+            console.error("Error cargando usuarios:", error);
+            Swal.fire('Error', 'No se pudo obtener la lista de usuarios.', 'error');
         }
-    };
-
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        cargarProfesores();
     }, []);
 
-    // Manejo del Modal
-    const abrirModal = (profe = null) => {
-        if (profe) {
-            setModoEdicion(true);
-            setFormData({ 
-                id: profe.id, 
-                cedula: profe.cedula,
-                nombre: profe.nombre, 
-                email: profe.email, 
-                rol: profe.rol,
-                password: '' // No mostramos la contraseña actual por seguridad
-            });
-        } else {
-            setModoEdicion(false);
-            setFormData({ id: null, cedula: '', nombre: '', email: '', password: '', rol: 'profesor' });
-        }
-        setModalAbierto(true);
-    };
+    useEffect(() => {
+        cargarProfesores();
+    }, [cargarProfesores]);
 
-    // Guardar (Crear o Editar)
-    const guardarProfesor = async (e) => {
+    // 2. CREAR O EDITAR USUARIO / DOCENTE
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const token = localStorage.getItem('token');
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-
         try {
             if (modoEdicion) {
-                // Si password va vacío, el backend no lo actualiza
-                await axios.put(`http://localhost:3000/api/usuarios/${formData.id}`, formData, config);
-                Swal.fire('Actualizado', 'Datos actualizados correctamente', 'success');
-            } else {
-                if (!formData.password) {
-                    return Swal.fire('Error', 'La contraseña es obligatoria para nuevos usuarios', 'warning');
+                // Estructurar el cuerpo de actualización
+                const updateData = {
+                    cedula: formData.cedula,
+                    nombre: formData.nombre,
+                    email: formData.email,
+                    rol: formData.rol
+                };
+                // Solo adjuntar contraseña si el administrador escribió algo nuevo
+                if (formData.password.trim() !== '') {
+                    updateData.password = formData.password;
                 }
-                await axios.post('http://localhost:3000/api/usuarios', formData, config);
-                Swal.fire('Creado', 'Profesor registrado correctamente', 'success');
+
+                await api.put(`/usuarios/${formData.id}`, updateData);
+                Swal.fire('¡Actualizado!', 'Los datos del usuario han sido modificados.', 'success');
+            } else {
+                // Crear nuevo usuario obligatoriamente con contraseña
+                if (!formData.password) {
+                    return Swal.fire('Atención', 'La contraseña es obligatoria para nuevos registros.', 'warning');
+                }
+                await api.post('/usuarios', formData);
+                Swal.fire('¡Registrado!', 'El nuevo usuario ha sido creado con éxito.', 'success');
             }
+
             setModalAbierto(false);
             cargarProfesores();
         } catch (error) {
-            console.error(error);
-            Swal.fire('Error', error.response?.data?.message || 'Hubo un error al guardar', 'error');
+            Swal.fire('Error', error.response?.data?.error || 'Ocurrió un error en el servidor.', 'error');
         }
     };
 
-    // Eliminar
-    const eliminarProfesor = async (id) => {
+    // 3. ELIMINAR USUARIO / DOCENTE
+    const handleEliminar = async (id) => {
         const result = await Swal.fire({
             title: '¿Estás seguro?',
-            text: "No podrás revertir esto. Si tiene materias asignadas, podría causar errores.",
+            text: "Esta acción eliminará al usuario. Si es un profesor, sus materias quedarán huérfanas.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#ef4444',
             confirmButtonText: 'Sí, eliminar',
             cancelButtonText: 'Cancelar'
         });
 
         if (result.isConfirmed) {
             try {
-                const token = localStorage.getItem('token');
-                await axios.delete(`http://localhost:3000/api/usuarios/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                Swal.fire('Eliminado', 'El usuario ha sido eliminado.', 'success');
+                await api.delete(`/usuarios/${id}`);
+                Swal.fire('¡Eliminado!', 'El usuario ha sido removido del sistema.', 'success');
                 cargarProfesores();
-            } catch {
-                Swal.fire('Error', 'No se pudo eliminar. Verifique que no tenga materias asignadas.', 'error');
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo eliminar al usuario seleccionado.', 'error');
             }
         }
     };
 
-    // Filtrado y Paginación
+    const abrirModalCrear = () => {
+        setModoEdicion(false);
+        setFormData({ id: null, cedula: '', nombre: '', email: '', password: '', rol: 'profesor' });
+        setModalAbierto(true);
+    };
+
+    const abrirModalEditar = (profe) => {
+        setModoEdicion(true);
+        setFormData({
+            id: profe.id,
+            cedula: profe?.cedula ?? '',
+            nombre: profe.nombre,
+            email: profe.email,
+            password: '', // Vacío por seguridad en edición
+            rol: profe.rol
+        });
+        setModalAbierto(true);
+    };
+
+    // Filtro de búsqueda en tiempo real
     const profesoresFiltrados = profesores.filter(p => 
         p.nombre.toLowerCase().includes(filtro.toLowerCase()) ||
+        (p.cedula?.toString().includes(filtro) ?? false) ||
         p.email.toLowerCase().includes(filtro.toLowerCase())
     );
 
+    // Cálculos lógicos de paginación
+    const totalPaginas = Math.ceil(profesoresFiltrados.length / itemsPorPagina);
     const indiceUltimoItem = paginaActual * itemsPorPagina;
     const indicePrimerItem = indiceUltimoItem - itemsPorPagina;
-    const itemsActuales = profesoresFiltrados.slice(indicePrimerItem, indiceUltimoItem);
-    const totalPaginas = Math.ceil(profesoresFiltrados.length / itemsPorPagina);
+    const profesoresPaginados = profesoresFiltrados.slice(indicePrimerItem, indiceUltimoItem);
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 p-6">
-            
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <GraduationCap className="text-blue-600" /> Administración de Profesores
-                    </h2>
-                    <p className="text-slate-500">Gestiona los accesos de docentes y administradores</p>
+        <div className="space-y-6">
+            {/* Encabezado Principal */}
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
+                        <GraduationCap size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-800">Administración de Personal</h2>
+                        <p className="text-sm text-slate-500">Gestión global de Docentes y Administradores</p>
+                    </div>
                 </div>
-                <button 
-                    onClick={() => abrirModal()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition shadow-lg"
-                >
-                    <Plus size={20} /> Nuevo Usuario
+
+                <button onClick={abrirModalCrear} className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 transition shadow-sm cursor-pointer">
+                    <Plus size={20} /> Registrar Personal
                 </button>
             </div>
 
-            {/* Barra de Búsqueda */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center gap-3">
-                <Search size={20} className="text-slate-400" />
-                <input 
-                    type="text"
-                    placeholder="Buscar por nombre o email..."
-                    className="w-full outline-none text-slate-700"
-                    value={filtro}
-                    onChange={(e) => { setFiltro(e.target.value); setPaginaActual(1); }}
-                />
-            </div>
+            {/* Tabla de Registros */}
+            <div className="bg-slate-50/90 rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+                <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                        <User size={18} className="text-violet-500" /> Lista de Usuarios ({profesoresFiltrados.length})
+                    </h3>
+                    <div className="relative w-full sm:w-64">
+                        <Search size={16} className="absolute left-3 top-3 text-slate-400" />
+                        <input 
+                            type="text" 
+                            placeholder="Buscar por nombre, cédula..."
+                            className="w-full pl-9 pr-4 py-1.5 bg-white/80 border border-slate-200 rounded-2xl text-sm outline-none focus:border-violet-500 font-medium"
+                            value={filtro}
+                            onChange={(e) => { setFiltro(e.target.value); setPaginaActual(1); }}
+                        />
+                    </div>
+                </div>
 
-            {/* Tabla */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-sm text-slate-600">
-                        <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                        <thead className="bg-slate-50 text-xs uppercase text-slate-500 font-semibold">
                             <tr>
-                                <th className="px-6 py-4">Usuario</th>
-                                <th className="px-6 py-4">Rol</th>
-                                <th className="px-6 py-4">Email</th>
-                                <th className="px-6 py-4 text-right">Acciones</th>
+                                <th className="px-6 py-3">Nombre Completo</th>
+                                <th className="px-6 py-3">Cédula</th>
+                                <th className="px-6 py-3">Rol del Sistema</th>
+                                <th className="px-6 py-3 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                            {itemsActuales.length === 0 ? (
-                                <tr><td colSpan="4" className="px-6 py-8 text-center text-slate-400">No se encontraron registros.</td></tr>
-                            ) : (
-                                itemsActuales.map((profe) => (
-                                    <tr key={profe.id} className="hover:bg-blue-50/30 transition">
-                                        <td className="px-6 py-4 font-medium text-slate-900 flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border border-slate-200">
-                                                {profe.nombre.charAt(0).toUpperCase()}
-                                            </div>
-                                            {profe.nombre}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                profe.rol === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                                            }`}>
-                                                {profe.rol.toUpperCase()}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-500">{profe.email}</td>
-                                        <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                            <button onClick={() => abrirModal(profe)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Editar">
-                                                <Edit size={18} />
-                                            </button>
-                                            <button onClick={() => eliminarProfesor(profe.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition" title="Eliminar">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                            {profesoresPaginados.map((profe) => (
+                                <tr key={profe.id} className="hover:bg-slate-50/40 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="font-medium text-slate-900">{profe.nombre}</div>
+                                        <div className="text-xs text-slate-400">{profe.email}</div>
+                                    </td>
+                                    <td className="px-6 py-4 font-mono text-xs">{profe.cedula ?? 'N/A'}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                            profe.rol === 'admin' 
+                                                ? 'bg-purple-100 text-purple-700' 
+                                                : 'bg-slate-100 text-slate-700'
+                                        }`}>
+                                            {profe.rol === 'admin' ? 'Administrador' : 'Docente'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right flex justify-end gap-3">
+                                        <button onClick={() => abrirModalEditar(profe)} className="text-slate-400 hover:text-violet-600 transition-colors cursor-pointer" title="Editar">
+                                            <Edit size={18} />
+                                        </button>
+                                        <button onClick={() => handleEliminar(profe.id)} className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer" title="Eliminar">
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {profesoresFiltrados.length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-400 italic">
+                                        No se encontraron usuarios registrados en el sistema.
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
 
-                {/* Paginación */}
-                {profesoresFiltrados.length > itemsPorPagina && (
-                    <div className="p-4 border-t border-slate-100 flex justify-between items-center bg-slate-50">
-                        <button 
-                            disabled={paginaActual === 1}
-                            onClick={() => setPaginaActual(prev => prev - 1)}
-                            className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 disabled:opacity-50 transition"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
-                        <span className="text-sm text-slate-500">
+                {/* Controles de Paginación */}
+                {totalPaginas > 1 && (
+                    <div className="p-4 border-t border-slate-50 bg-slate-50/50 flex items-center justify-between">
+                        <span className="text-xs text-slate-400 font-medium">
                             Página {paginaActual} de {totalPaginas}
                         </span>
-                        <button 
-                            disabled={paginaActual === totalPaginas}
-                            onClick={() => setPaginaActual(prev => prev + 1)}
-                            className="p-2 rounded-lg hover:bg-white border border-transparent hover:border-slate-200 disabled:opacity-50 transition"
-                        >
-                            <ChevronRight size={20} />
-                        </button>
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => setPaginaActual(prev => Math.max(prev - 1, 1))}
+                                disabled={paginaActual === 1}
+                                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 transition cursor-pointer"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <button 
+                                onClick={() => setPaginaActual(prev => Math.min(prev + 1, totalPaginas))}
+                                disabled={paginaActual === totalPaginas}
+                                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 disabled:opacity-40 transition cursor-pointer"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Modal Crear/Editar */}
+            {/* MODAL CREAR / EDITAR */}
             {modalAbierto && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm transition-all">
-                    <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-slate-800">
-                                {modoEdicion ? 'Editar Usuario' : 'Nuevo Usuario'}
-                            </h3>
-                            <button onClick={() => setModalAbierto(false)} className="text-slate-400 hover:text-slate-600 transition">
-                                <X size={24} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={guardarProfesor} className="space-y-4">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+                    <div className="bg-slate-50/95 rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-200 relative">
+                        <button onClick={() => setModalAbierto(false)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer">
+                            <X size={20} />
+                        </button>
+                        
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">
+                            {modoEdicion ? 'Editar Información General' : 'Registrar Nuevo Personal'}
+                        </h3>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Cédula</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Número de Cédula</label>
                                 <input 
                                     type="text" 
-                                    required
-                                    className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
+                                    placeholder="Ej. 1726354758"
+                                    className={`w-full px-3 py-2 border border-slate-200 rounded-2xl outline-none font-medium text-slate-700 ${modoEdicion ? 'bg-slate-100 cursor-not-allowed' : 'focus:border-violet-500'}`}
                                     value={formData.cedula}
                                     onChange={(e) => setFormData({...formData, cedula: e.target.value})}
-                                    placeholder="Ej: 1712345678"
+                                    disabled={modoEdicion}
+                                    required
                                 />
+                                {modoEdicion && (
+                                    <p className="text-xs text-slate-400 mt-1">La cédula se conserva y no puede modificarse desde esta vista.</p>
+                                )}
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
                                 <input 
                                     type="text" 
-                                    required
-                                    className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
+                                    placeholder="Ej. Ing. Carlos Pérez"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.nombre}
                                     onChange={(e) => setFormData({...formData, nombre: e.target.value})}
+                                    required
                                 />
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
                                 <input 
                                     type="email" 
-                                    required
-                                    className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
+                                    placeholder="ejemplo@correo.com"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.email}
                                     onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    required
                                 />
                             </div>
-                            
+
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                                    Contraseña {modoEdicion && <span className="text-xs text-slate-400 font-normal">(Dejar en blanco para mantener actual)</span>}
+                                    {modoEdicion ? 'Contraseña (Dejar en blanco para conservar)' : 'Contraseña de Acceso'}
                                 </label>
                                 <input 
                                     type="password" 
-                                    className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"
-                                    placeholder={modoEdicion ? "********" : "Nueva contraseña"}
+                                    placeholder={modoEdicion ? "********" : "Mínimo 6 caracteres"}
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.password}
                                     onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                    required={!modoEdicion}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Rol</label>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Rol Operativo</label>
                                 <select 
-                                    className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-gray-800"
+                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 outline-none focus:border-violet-500 cursor-pointer"
                                     value={formData.rol}
                                     onChange={(e) => setFormData({...formData, rol: e.target.value})}
                                 >
-                                    <option value="profesor">Profesor / Docente</option>
-                                    <option value="admin">Administrador</option>
+                                    <option value="profesor">Docente / Profesor</option>
+                                    <option value="admin">Administrador global</option>
                                 </select>
                             </div>
 
-                            <button type="submit" className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition flex justify-center gap-2 mt-4 shadow-md">
-                                <Save size={20} /> Guardar
-                            </button>
+                            <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100">
+                                <button type="button" onClick={() => setModalAbierto(false)} className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors cursor-pointer font-medium">
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="flex-1 bg-violet-600 text-white py-2 rounded-2xl font-bold hover:bg-violet-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer">
+                                    <Save size={18} /> Guardar
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
