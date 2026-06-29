@@ -134,9 +134,9 @@ export default function ProfesoresView() {
     return (
         <div className="space-y-6">
             {/* Encabezado Principal */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
                         <GraduationCap size={24} />
                     </div>
                     <div>
@@ -145,23 +145,23 @@ export default function ProfesoresView() {
                     </div>
                 </div>
 
-                <button onClick={abrirModalCrear} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm cursor-pointer">
+                <button onClick={abrirModalCrear} className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 transition shadow-sm cursor-pointer">
                     <Plus size={20} /> Registrar Personal
                 </button>
             </div>
 
             {/* Tabla de Registros */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="bg-slate-50/90 rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+                <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                        <User size={18} className="text-blue-500" /> Lista de Usuarios ({profesoresFiltrados.length})
+                        <User size={18} className="text-violet-500" /> Lista de Usuarios ({profesoresFiltrados.length})
                     </h3>
                     <div className="relative w-full sm:w-64">
                         <Search size={16} className="absolute left-3 top-3 text-slate-400" />
                         <input 
                             type="text" 
                             placeholder="Buscar por nombre, cédula..."
-                            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
+                            className="w-full pl-9 pr-4 py-1.5 bg-white/80 border border-slate-200 rounded-2xl text-sm outline-none focus:border-violet-500 font-medium"
                             value={filtro}
                             onChange={(e) => { setFiltro(e.target.value); setPaginaActual(1); }}
                         />
@@ -190,13 +190,13 @@ export default function ProfesoresView() {
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                                             profe.rol === 'admin' 
                                                 ? 'bg-purple-100 text-purple-700' 
-                                                : 'bg-blue-100 text-blue-700'
+                                                : 'bg-slate-100 text-slate-700'
                                         }`}>
                                             {profe.rol === 'admin' ? 'Administrador' : 'Docente'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-right flex justify-end gap-3">
-                                        <button onClick={() => abrirModalEditar(profe)} className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer" title="Editar">
+                                        <button onClick={() => abrirModalEditar(profe)} className="text-slate-400 hover:text-violet-600 transition-colors cursor-pointer" title="Editar">
                                             <Edit size={18} />
                                         </button>
                                         <button onClick={() => handleEliminar(profe.id)} className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer" title="Eliminar">
@@ -245,7 +245,7 @@ export default function ProfesoresView() {
             {/* MODAL CREAR / EDITAR */}
             {modalAbierto && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+                    <div className="bg-slate-50/95 rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-200 relative">
                         <button onClick={() => setModalAbierto(false)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer">
                             <X size={20} />
                         </button>
@@ -260,7 +260,7 @@ export default function ProfesoresView() {
                                 <input 
                                     type="text" 
                                     placeholder="Ej. 1726354758"
-                                    className={`w-full px-3 py-2 border border-slate-200 rounded-lg outline-none font-medium text-slate-700 ${modoEdicion ? 'bg-slate-100 cursor-not-allowed' : 'focus:border-blue-500'}`}
+                                    className={`w-full px-3 py-2 border border-slate-200 rounded-2xl outline-none font-medium text-slate-700 ${modoEdicion ? 'bg-slate-100 cursor-not-allowed' : 'focus:border-violet-500'}`}
                                     value={formData.cedula}
                                     onChange={(e) => setFormData({...formData, cedula: e.target.value})}
                                     disabled={modoEdicion}
@@ -276,7 +276,7 @@ export default function ProfesoresView() {
                                 <input 
                                     type="text" 
                                     placeholder="Ej. Ing. Carlos Pérez"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none font-medium text-slate-700"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.nombre}
                                     onChange={(e) => setFormData({...formData, nombre: e.target.value})}
                                     required
@@ -288,7 +288,7 @@ export default function ProfesoresView() {
                                 <input 
                                     type="email" 
                                     placeholder="ejemplo@correo.com"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none font-medium text-slate-700"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.email}
                                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                                     required
@@ -302,7 +302,7 @@ export default function ProfesoresView() {
                                 <input 
                                     type="password" 
                                     placeholder={modoEdicion ? "********" : "Mínimo 6 caracteres"}
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none font-medium text-slate-700"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.password}
                                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                                     required={!modoEdicion}
@@ -312,7 +312,7 @@ export default function ProfesoresView() {
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Rol Operativo</label>
                                 <select 
-                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:border-blue-500 cursor-pointer"
+                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 outline-none focus:border-violet-500 cursor-pointer"
                                     value={formData.rol}
                                     onChange={(e) => setFormData({...formData, rol: e.target.value})}
                                 >
@@ -322,10 +322,10 @@ export default function ProfesoresView() {
                             </div>
 
                             <div className="flex gap-3 mt-6 pt-4 border-t border-slate-100">
-                                <button type="button" onClick={() => setModalAbierto(false)} className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer font-medium">
+                                <button type="button" onClick={() => setModalAbierto(false)} className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors cursor-pointer font-medium">
                                     Cancelar
                                 </button>
-                                <button type="submit" className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer">
+                                <button type="submit" className="flex-1 bg-violet-600 text-white py-2 rounded-2xl font-bold hover:bg-violet-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer">
                                     <Save size={18} /> Guardar
                                 </button>
                             </div>

@@ -6,7 +6,7 @@ export default function QrModal({ abierto, token, onCerrar, onTerminar, qrSize =
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [displayToken, setDisplayToken] = useState(token);
 
-  // Efecto de transición suave cuando el token cambia (tipo WhatsApp)
+  // Efecto de transición suave cuando el token cambia
   useEffect(() => {
     if (token && token !== displayToken) {
       setIsTransitioning(true);
@@ -22,7 +22,7 @@ export default function QrModal({ abierto, token, onCerrar, onTerminar, qrSize =
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 animate-in fade-in duration-200 p-4">
-      <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl relative border border-slate-200 animate-in zoom-in-95 duration-300 max-h-[98vh] overflow-y-auto">
+      <div className="bg-slate-50/95 rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center shadow-2xl relative border border-slate-200 animate-in zoom-in-95 duration-300 max-h-[98vh] overflow-y-auto">
         
         {/* Botón cerrar */}
         <button 
@@ -35,10 +35,10 @@ export default function QrModal({ abierto, token, onCerrar, onTerminar, qrSize =
         {/* Badge de estado con indicador animado */}
         <div className="flex items-center justify-center gap-2 mb-4">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
           </span>
-          <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1.5 rounded-full uppercase tracking-wider">
+          <span className="text-xs font-bold text-violet-700 bg-violet-50 px-3 py-1.5 rounded-full uppercase tracking-wider">
             Código Dinámico Activo
           </span>
         </div>
@@ -85,15 +85,15 @@ export default function QrModal({ abierto, token, onCerrar, onTerminar, qrSize =
         {/* Botón detener */}
         <button 
           onClick={onTerminar} 
-          className="w-full bg-gradient-to-r from-red-50 to-orange-50 text-red-600 hover:from-red-100 hover:to-orange-100 font-bold py-3 sm:py-3.5 rounded-xl text-sm transition-all duration-200 flex justify-center items-center gap-2 cursor-pointer hover:shadow-lg hover:scale-105 active:scale-95 border border-red-200"
+          className="w-full bg-violet-600 text-white font-bold py-3 sm:py-3.5 rounded-2xl text-sm transition-all duration-200 flex justify-center items-center gap-2 cursor-pointer hover:bg-violet-700 hover:shadow-lg hover:scale-105 active:scale-95"
         >
           <Power size={18} /> 
           <span>Detener Transmisión</span>
         </button>
 
         {/* Nota informativa */}
-        <div className="mt-6 p-3 sm:p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-xs sm:text-sm text-blue-700 font-medium">
+        <div className="mt-6 p-3 sm:p-4 bg-violet-50 border border-violet-200 rounded-2xl">
+          <p className="text-xs sm:text-sm text-violet-700 font-medium">
             💡 El código se regenera automáticamente cada 30 segundos
           </p>
         </div>

@@ -17,4 +17,22 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const token = localStorage.getItem('token');
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+    if (status === 401 && token && !isLoginRequest && typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.setItem('sessionExpired', 'true');
+      window.location.href = '/';
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export default api;

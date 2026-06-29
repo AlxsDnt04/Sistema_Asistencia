@@ -24,27 +24,27 @@ const DonutChart = ({ presentes, total }) => {
 export default function LiveStatsCard({ matriculados, presentes }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div className="bg-slate-50/90 p-6 rounded-3xl border border-slate-200 shadow-lg flex items-center justify-between">
         <div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Matriculados</span>
           <span className="text-3xl font-black text-slate-800">{matriculados}</span>
         </div>
-        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+        <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
           <Users size={24} />
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div className="bg-slate-50/90 p-6 rounded-3xl border border-slate-200 shadow-lg flex items-center justify-between">
         <div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Presentes Hoy</span>
           <span className="text-3xl font-black text-emerald-600">{presentes}</span>
         </div>
-        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
           <Clock size={24} />
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
+      <div className="bg-slate-50/90 p-6 rounded-3xl border border-slate-200 shadow-lg flex items-center justify-between">
         <div>
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">Porcentaje General</span>
           <span className="text-sm text-slate-400 font-medium mt-1 block">Clase del día</span>

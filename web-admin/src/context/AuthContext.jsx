@@ -14,6 +14,14 @@ export const AuthProvider = ({ children }) => {
   const [loadingMaterias, setLoadingMaterias] = useState(true);
 
   // Función optimizada para cargar las materias del usuario autenticado
+  const handleSessionExpired = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.setItem('sessionExpired', 'true');
+    setUser(null);
+    setMisMaterias([]);
+  }, []);
+
   const cargarMateriasGlobales = useCallback(async (usuarioActual) => {
     if (!usuarioActual) return;
     try {
@@ -29,10 +37,13 @@ export const AuthProvider = ({ children }) => {
       setMisMaterias(cursos);
     } catch (error) {
       console.error("Error cargando materias en el contexto global:", error);
+      if (error.response?.status === 401) {
+        handleSessionExpired();
+      }
     } finally {
       setLoadingMaterias(false);
     }
-  }, []);
+  }, [handleSessionExpired]);
 
   useEffect(() => {
     // Verificar sesión al cargar la app

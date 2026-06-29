@@ -194,13 +194,13 @@ export default function ReportesView() {
     return (
         <div className="space-y-6 animate-in fade-in duration-500 p-6">
             {/* Header / Selector */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
                         <FileText size={24} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-bold text-slate-800">Reportes Consolidados</h2>
+                        <h2 className="text-xl font-bold text-slate-800">Reportes de Asistencia</h2>
                         <p className="text-sm text-slate-500">Historial completo y exportación de asistencias de tus asignaturas.</p>
                     </div>
                 </div>
@@ -212,7 +212,7 @@ export default function ReportesView() {
                     ) : (
                         <div className="relative">
                             <select 
-                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                                className="w-full p-2.5 bg-white/80 border border-slate-200 rounded-2xl font-medium text-slate-700 outline-none focus:ring-2 focus:ring-violet-500 appearance-none cursor-pointer"
                                 value={materiaSeleccionada}
                                 onChange={(e) => setMateriaSeleccionada(e.target.value)}
                             >
@@ -231,11 +231,11 @@ export default function ReportesView() {
 
             {/* Acciones de exportación y Vista Previa */}
             {loading ? (
-                <div className="bg-white rounded-2xl p-12 text-center text-slate-500 border border-slate-100 shadow-sm animate-pulse">
+                <div className="bg-slate-50/90 rounded-3xl p-12 text-center text-slate-500 border border-slate-200 shadow-lg animate-pulse">
                     Generando matriz de asistencia...
                 </div>
             ) : datosReporte && (
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-4">
+                <div className="bg-slate-50/90 rounded-3xl shadow-lg border border-slate-200 overflow-hidden animate-in slide-in-from-bottom-4">
                     <div className="p-6 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div>
                             <h3 className="font-bold text-slate-800">
@@ -246,13 +246,13 @@ export default function ReportesView() {
                         <div className="flex gap-2 w-full sm:w-auto">
                             <button 
                                 onClick={exportarExcel} 
-                                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition shadow-sm w-full sm:w-auto cursor-pointer"
+                                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-violet-600 text-white rounded-2xl hover:bg-violet-700 transition shadow-sm w-full sm:w-auto cursor-pointer"
                             >
                                 <FileText size={16} /> Excel
                             </button>
                             <button 
                                 onClick={exportarPDF} 
-                                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-xl hover:bg-red-700 transition shadow-sm w-full sm:w-auto cursor-pointer"
+                                className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-slate-800 text-white rounded-2xl hover:bg-slate-900 transition shadow-sm w-full sm:w-auto cursor-pointer"
                             >
                                 <Download size={16} /> PDF
                             </button>
@@ -266,7 +266,7 @@ export default function ReportesView() {
                                     <th className="px-4 py-3 w-10 border-r text-center">#</th>
                                     <th className="px-4 py-3 sticky left-0 bg-slate-50 z-10 border-r min-w-[220px]">Estudiante / Cédula</th>
                                     {datosReporte.fechas.map(fecha => (
-                                        <th key={fecha} className="px-2 py-3 text-center min-w-[65px] border-r bg-blue-50/30 font-mono text-[11px]">
+                                        <th key={fecha} className="px-2 py-3 text-center min-w-[65px] border-r bg-violet-50/30 font-mono text-[11px]">
                                             {fecha.split('-').slice(1).reverse().join('/')}
                                         </th>
                                     ))}

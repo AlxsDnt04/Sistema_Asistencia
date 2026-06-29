@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 
 export default function AsistenciasTable({ asistencias, filtro, setFiltro }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div className="bg-slate-50/90 rounded-3xl border border-slate-200 shadow-lg overflow-hidden">
       <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h3 className="font-bold text-slate-800">
           Alumnos Registrados en esta Clase ({asistencias.length})
@@ -13,7 +13,7 @@ export default function AsistenciasTable({ asistencias, filtro, setFiltro }) {
           <input
             type="text"
             placeholder="Filtrar por nombre o cédula..."
-            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 font-medium"
+            className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm outline-none focus:border-violet-500 font-medium"
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
           />

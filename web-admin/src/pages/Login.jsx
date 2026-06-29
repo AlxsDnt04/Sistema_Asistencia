@@ -1,5 +1,5 @@
-import { useState, useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Lock, Mail, ChevronRight, AlertCircle, Eye, EyeOff, GraduationCap } from "lucide-react";
 import { AuthContext } from "../context/AuthContext";
 import api from "../api/axiosConfig";
@@ -12,7 +12,27 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
+  const [infoMessage, setInfoMessage] = useState("");
+
+  useEffect(() => {
+    const messageFromState = location.state?.message;
+    const expiredFlag = localStorage.getItem("sessionExpired");
+
+    if (messageFromState) {
+      setInfoMessage(messageFromState);
+    } else if (expiredFlag) {
+      setInfoMessage("Su sesión expiró. Acceda nuevamente.");
+      localStorage.removeItem("sessionExpired");
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!infoMessage) return;
+    const timer = setTimeout(() => setInfoMessage(""), 5000);
+    return () => clearTimeout(timer);
+  }, [infoMessage]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -47,17 +67,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 flex items-center justify-center p-4 relative overflow-hidden">
-      
-      {/* Decoraciones de fondo con gradientes */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl -z-10 animate-pulse" />
-      <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-purple-500/10 to-indigo-500/10 rounded-full blur-3xl -z-10 animate-pulse" style={{ animationDelay: "2s" }} />
+    <div
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-950"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at 20% 20%, rgba(59,130,246,0.14), transparent 24%), radial-gradient(circle at 80% 15%, rgba(168,85,247,0.16), transparent 20%), radial-gradient(circle at 50% 80%, rgba(99,102,241,0.12), transparent 25%)'
+      }}
+    >
+      {/* Decoraciones de fondo con figuras */}
+      <div className="absolute top-[-80px] right-[-80px] w-96 h-96 bg-violet-500/15 rounded-full blur-3xl -z-10 animate-pulse" />
+      <div className="absolute top-16 left-12 w-80 h-80 bg-fuchsia-500/10 rounded-full blur-3xl -z-10" />
+      <div className="absolute bottom-[-60px] left-[-60px] w-96 h-96 bg-violet-500/10 rounded-full blur-3xl -z-10 animate-pulse" style={{ animationDelay: '2s' }} />
+      <div className="absolute bottom-24 right-20 w-48 h-48 bg-violet-400/10 rounded-full blur-3xl -z-10" />
 
       {/* Card principal con Glassmorphism */}
       <div className="w-full max-w-md">
         <div className="relative">
           {/* Efecto de glow detrás de la tarjeta */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-2xl -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-purple-500/20 rounded-3xl blur-2xl -z-10" />
           
           {/* Tarjeta glassmorphism */}
           <div className="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl p-8 md:p-10">
@@ -65,17 +92,25 @@ export default function Login() {
             {/* Header */}
             <div className="text-center mb-10">
               <div className="flex justify-center mb-4">
-                <div className="p-4 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl backdrop-blur-sm border border-blue-400/20">
-                  <GraduationCap className="text-blue-400" size={40} strokeWidth={1.5} />
+                <div className="p-4 bg-gradient-to-br from-violet-500/20 to-purple-500/20 rounded-2xl backdrop-blur-sm border border-violet-400/20">
+                  <GraduationCap className="text-violet-400" size={40} strokeWidth={1.5} />
                 </div>
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-blue-300 bg-clip-text text-transparent mb-2">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-300 via-fuchsia-300 to-violet-300 bg-clip-text text-transparent mb-2">
                 Bienvenido
               </h1>
               <p className="text-slate-300 text-sm font-medium tracking-wide">
                 Sistema de Asistencia Docente
               </p>
             </div>
+
+            {/* Status Alert */}
+            {infoMessage && (
+              <div className="bg-amber-500/10 border border-amber-400/30 backdrop-blur-sm text-amber-300 p-4 rounded-xl mb-6 flex items-center gap-3 text-sm animate-in fade-in duration-300">
+                <AlertCircle size={18} className="flex-shrink-0" />
+                <span className="font-medium">{infoMessage}</span>
+              </div>
+            )}
 
             {/* Error Alert */}
             {error && (
@@ -94,13 +129,13 @@ export default function Login() {
                   Correo Institucional
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-focus-within:from-blue-500/10 group-focus-within:to-purple-500/10 rounded-xl transition-all duration-300" />
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors" size={20} strokeWidth={1.5} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-500/0 to-purple-500/0 group-focus-within:from-violet-500/10 group-focus-within:to-purple-500/10 rounded-xl transition-all duration-300" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-400 transition-colors" size={20} strokeWidth={1.5} />
                   <input
                     type="email"
                     required
                     placeholder="docente@universidad.edu"
-                    className="w-full relative bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-400/50 text-white pl-12 pr-4 py-3 rounded-xl outline-none transition-all duration-300 backdrop-blur-sm placeholder-slate-500 focus:bg-white/10 focus:shadow-lg focus:shadow-blue-500/10"
+                    className="w-full relative bg-white/5 border border-white/10 hover:border-white/20 focus:border-violet-400/50 text-white pl-12 pr-4 py-3 rounded-xl outline-none transition-all duration-300 backdrop-blur-sm placeholder-slate-500 focus:bg-white/10 focus:shadow-lg focus:shadow-violet-500/10"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -113,13 +148,13 @@ export default function Login() {
                   Contraseña
                 </label>
                 <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-focus-within:from-blue-500/10 group-focus-within:to-purple-500/10 rounded-xl transition-all duration-300" />
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors" size={20} strokeWidth={1.5} />
+                  <div className="absolute inset-0 bg-gradient-to-r from-violet-500/0 to-purple-500/0 group-focus-within:from-violet-500/10 group-focus-within:to-purple-500/10 rounded-xl transition-all duration-300" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-400 transition-colors" size={20} strokeWidth={1.5} />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder="••••••••"
-                    className="w-full relative bg-white/5 border border-white/10 hover:border-white/20 focus:border-blue-400/50 text-white pl-12 pr-12 py-3 rounded-xl outline-none transition-all duration-300 backdrop-blur-sm placeholder-slate-500 focus:bg-white/10 focus:shadow-lg focus:shadow-blue-500/10"
+                    className="w-full relative bg-white/5 border border-white/10 hover:border-white/20 focus:border-violet-400/50 text-white pl-12 pr-12 py-3 rounded-xl outline-none transition-all duration-300 backdrop-blur-sm placeholder-slate-500 focus:bg-white/10 focus:shadow-lg focus:shadow-violet-500/10"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
@@ -145,7 +180,7 @@ export default function Login() {
                   ${
                     loading
                       ? "bg-slate-600 cursor-not-allowed"
-                      : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 active:scale-95 text-white shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
+                      : "bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 active:scale-95 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40"
                   }`}
               >
                 {/* Efecto de brillo */}
@@ -171,7 +206,7 @@ export default function Login() {
               <p className="text-slate-400 text-sm">
                 ¿Necesitas ayuda?
               </p>
-              <a href="#" className="text-blue-400 hover:text-blue-300 text-sm font-semibold transition-colors">
+              <a href="#" className="text-violet-300 hover:text-violet-200 text-sm font-semibold transition-colors">
                 Contacta al administrador
               </a>
             </div>

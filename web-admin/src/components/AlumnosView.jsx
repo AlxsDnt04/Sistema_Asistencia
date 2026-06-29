@@ -258,9 +258,9 @@ export default function AlumnosView() {
   return (
     <div className="space-y-6">
       {/* Selector de Materia */}
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+          <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
             <BookOpen size={24} />
           </div>
           <div>
@@ -283,7 +283,7 @@ export default function AlumnosView() {
             <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
           ) : (
             <select
-              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:border-blue-500 transition-colors cursor-pointer"
+              className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 outline-none focus:border-violet-500 transition-colors cursor-pointer"
               value={materiaSeleccionada}
               onChange={(e) => setMateriaSeleccionada(e.target.value)}
             >
@@ -305,9 +305,9 @@ export default function AlumnosView() {
           {/* Formularios de Registro e Importación */}
           <div className="space-y-6">
             {/* Registro Individual */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-              <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                <UserPlus size={18} className="text-blue-500" /> Vincular
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200">
+              <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <UserPlus size={18} className="text-violet-500" /> Vincular
                 Estudiante
               </h3>
               <form onSubmit={handleMatricular} className="space-y-4">
@@ -318,7 +318,7 @@ export default function AlumnosView() {
                   <input
                     type="text"
                     placeholder="Ej. 1725364758"
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:border-blue-500 text-slate-700 font-medium"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl outline-none focus:border-violet-500 text-slate-700 font-medium"
                     value={cedulaInput}
                     onChange={(e) => setCedulaInput(e.target.value)}
                     required
@@ -326,7 +326,7 @@ export default function AlumnosView() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-bold hover:bg-blue-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer"
+                  className="w-full bg-violet-600 text-white py-2.5 rounded-2xl font-bold hover:bg-violet-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer"
                 >
                   <UserPlus size={18} /> Vincular
                 </button>
@@ -334,9 +334,9 @@ export default function AlumnosView() {
             </div>
 
             {/* Carga Masiva */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-              <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2">
-                <FileSpreadsheet size={18} className="text-emerald-500" /> Carga
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200">
+              <h3 className="font-bold text-slate-900 mb-2 flex items-center gap-2">
+                <FileSpreadsheet size={18} className="text-violet-500" /> Carga
                 Masiva (.csv)
               </h3>
               <p className="text-xs text-slate-400 mb-4">
@@ -360,10 +360,10 @@ export default function AlumnosView() {
           </div>
 
           {/* Listado de Matriculados */}
-          <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="xl:col-span-2 bg-slate-50/90 rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
             <div className="p-6 border-b border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <Users size={18} className="text-blue-500" /> Alumnos
+                <Users size={18} className="text-violet-600" /> Alumnos
                 Matriculados ({alumnosFiltrados.length})
               </h3>
               <div className="relative w-full sm:w-64">
@@ -374,7 +374,7 @@ export default function AlumnosView() {
                 <input
                   type="text"
                   placeholder="Buscar por nombre o cédula..."
-                  className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 text-slate-700 font-medium"
+                  className="w-full pl-9 pr-4 py-1.5 bg-white/80 border border-slate-200 rounded-2xl text-sm outline-none focus:border-violet-500 text-slate-700 font-medium"
                   value={busquedaAlumno}
                   onChange={(e) => setBusquedaAlumno(e.target.value)}
                 />
@@ -420,7 +420,7 @@ export default function AlumnosView() {
                         <td className="px-6 py-4 text-right flex justify-end gap-3">
                           <button
                             onClick={() => abrirModalEdicion(alumno)}
-                            className="text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                            className="text-slate-400 hover:text-violet-600 transition-colors cursor-pointer"
                             title="Editar estudiante"
                           >
                             <Edit size={18} />
@@ -479,7 +479,7 @@ export default function AlumnosView() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none text-slate-700 font-medium"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none text-slate-700 font-medium"
                   value={editForm.nombre}
                   onChange={(e) =>
                     setEditForm({ ...editForm, nombre: e.target.value })
@@ -494,7 +494,7 @@ export default function AlumnosView() {
                 </label>
                 <input
                   type="email"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none text-slate-700 font-medium"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none text-slate-700 font-medium"
                   value={editForm.email}
                   onChange={(e) =>
                     setEditForm({ ...editForm, email: e.target.value })
@@ -509,7 +509,7 @@ export default function AlumnosView() {
                 </label>
                 <input
                   type="text"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-blue-500 outline-none text-slate-700 font-medium"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none text-slate-700 font-medium"
                   value={editForm.cedula}
                   onChange={(e) =>
                     setEditForm({ ...editForm, cedula: e.target.value })
@@ -522,13 +522,13 @@ export default function AlumnosView() {
                 <button
                   type="button"
                   onClick={() => setEditingStudent(null)}
-                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer font-medium"
+                  className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-2xl hover:bg-slate-200 transition-colors cursor-pointer font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-bold cursor-pointer shadow-sm"
+                  className="flex-1 px-4 py-2 text-white bg-violet-600 rounded-2xl hover:bg-violet-700 transition-colors flex items-center justify-center gap-2 font-bold cursor-pointer shadow-sm"
                 >
                   <Save size={18} /> Guardar
                 </button>
@@ -540,7 +540,7 @@ export default function AlumnosView() {
 
       {/* FILTRO EXTRA PARA MODO ADMINISTRADOR */}
       {user?.rol === "admin" && (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200">
           <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
             <Search size={18} className="text-slate-500" /> Localizador Global
             de Cursos
@@ -553,7 +553,7 @@ export default function AlumnosView() {
             <input
               type="text"
               placeholder="Filtrar catálogo completo de materias..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500"
+              className="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200 rounded-2xl text-sm outline-none focus:border-violet-500"
               value={filtroMateriaAdmin}
               onChange={(e) => setFiltroMateriaAdmin(e.target.value)}
             />
@@ -565,7 +565,7 @@ export default function AlumnosView() {
                 onClick={() => setMateriaSeleccionada(m.id)}
                 className={`text-xs px-3 py-1.5 rounded-lg font-medium transition cursor-pointer ${
                   materiaSeleccionada == m.id
-                    ? "bg-blue-600 text-white shadow-sm"
+                    ? "bg-violet-600 text-white shadow-sm"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >

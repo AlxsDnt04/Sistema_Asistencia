@@ -134,9 +134,9 @@ export default function MateriasView() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-2xl">
                         <BookOpen size={24} />
                     </div>
                     <div>
@@ -148,40 +148,40 @@ export default function MateriasView() {
                 </div>
 
                 {esAdmin && (
-                    <button onClick={abrirModalCrear} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm hover:shadow cursor-pointer">
+                    <button onClick={abrirModalCrear} className="bg-violet-600 hover:bg-violet-700 text-white px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 transition shadow-sm hover:shadow cursor-pointer">
                         <Plus size={20} /> Crear Nueva Materia
                     </button>
                 )}
             </div>
 
             {/* Buscador de materias */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div className="bg-slate-50/90 p-6 rounded-3xl shadow-lg border border-slate-200">
                 <label className="block text-sm font-medium text-slate-700 mb-2">Buscar materias</label>
                 <input
                     type="text"
                     placeholder="Buscar por código o nombre"
-                    className="w-full px-4 py-3 border border-slate-200 rounded-2xl bg-slate-50 focus:border-indigo-500 outline-none text-slate-700"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-2xl bg-white/80 focus:border-violet-500 outline-none text-slate-700"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                 />
             </div>
 
             {/* Listado de Cursos en Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-dashed border border-slate-200 p-6 rounded-2xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 bg-slate-50/90 border border-slate-200 p-6 rounded-3xl">
                 {materiasFiltradas.map((materia) => (
-                    <div key={materia.id} className="bg-slate-100 rounded-2xl border border-slate-100 p-6 shadow-sm hover:shadow-md transition flex flex-col justify-between relative group">
+                    <div key={materia.id} className="bg-white/95 rounded-3xl border border-slate-200 p-6 shadow-lg hover:shadow-xl transition flex flex-col justify-between relative group">
                         <div>
                             <div className="flex justify-between items-start mb-4">
                                 <span className="text-xs font-mono font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
                                     {materia.codigo}
                                 </span>
                             </div>
-                            <h3 className="font-bold text-lg text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">
+                            <h3 className="font-bold text-lg text-slate-800 mb-2 group-hover:text-violet-600 transition-colors">
                                 {materia.nombre}
                             </h3>
                             {esAdmin && (
-                                <div className="flex items-center gap-2 text-xs text-slate-400 mt-4 pt-4 border-t border-slate-50">
-                                    <User size={14} className="text-indigo-400" />
+                                <div className="flex items-center gap-2 text-xs text-slate-400 mt-4 pt-4 border-t border-slate-100">
+                                    <User size={14} className="text-violet-400" />
                                     <span>Profesor: <b>{obtenerNombreProfesor(materia)}</b></span>
                                 </div>
                             )}
@@ -189,7 +189,7 @@ export default function MateriasView() {
 
                         {esAdmin && (
                             <div className="flex gap-2 justify-end mt-6">
-                                <button onClick={() => abrirModalEditar(materia)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition cursor-pointer" title="Editar">
+                                <button onClick={() => abrirModalEditar(materia)} className="p-2 text-slate-400 hover:text-violet-600 hover:bg-violet-50 rounded-2xl transition cursor-pointer" title="Editar">
                                     <Edit size={18} />
                                 </button>
                                 <button onClick={() => handleEliminar(materia.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer" title="Eliminar">
@@ -201,7 +201,7 @@ export default function MateriasView() {
                 ))}
 
                 {materiasFiltradas.length === 0 && (
-                    <div className="col-span-full bg-white p-12 text-center rounded-2xl border border-dashed border-slate-200 text-slate-400 italic">
+                    <div className="col-span-full bg-slate-50/90 p-12 text-center rounded-3xl border border-dashed border-slate-200 text-slate-400 italic">
                         {busqueda ? 'No hay materias que coincidan con la búsqueda.' : 'No hay materias registradas en este momento.'}
                     </div>
                 )}
@@ -210,7 +210,7 @@ export default function MateriasView() {
             {/* MODAL CREAR / EDITAR */}
             {modalAbierto && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+                    <div className="bg-slate-50/95 rounded-3xl w-full max-w-md p-6 shadow-2xl border border-slate-200 relative">
                         <button onClick={() => setModalAbierto(false)} className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 cursor-pointer">
                             <X size={20} />
                         </button>
@@ -223,7 +223,7 @@ export default function MateriasView() {
                                 <input 
                                     type="text" 
                                     placeholder="Ej. Estructuras de Datos"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-indigo-500 outline-none font-medium text-slate-700"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700"
                                     value={formData.nombre}
                                     onChange={(e) => setFormData({...formData, nombre: e.target.value})}
                                     required
@@ -235,7 +235,7 @@ export default function MateriasView() {
                                 <input 
                                     type="text" 
                                     placeholder="Ej. ED-001"
-                                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:border-indigo-500 outline-none font-medium text-slate-700 uppercase"
+                                    className="w-full px-3 py-2 border border-slate-200 rounded-2xl focus:border-violet-500 outline-none font-medium text-slate-700 uppercase"
                                     value={formData.codigo}
                                     onChange={(e) => setFormData({...formData, codigo: e.target.value})}
                                     required
@@ -246,7 +246,7 @@ export default function MateriasView() {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-700 mb-1">Asignar Docente</label>
                                     <select 
-                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:border-indigo-500 cursor-pointer"
+                                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-slate-700 outline-none focus:border-violet-500 cursor-pointer"
                                         value={formData.profesorId}
                                         onChange={(e) => setFormData({...formData, profesorId: e.target.value})}
                                         required
@@ -263,7 +263,7 @@ export default function MateriasView() {
                                 <button type="button" onClick={() => setModalAbierto(false)} className="flex-1 px-4 py-2 text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors cursor-pointer font-medium">
                                     Cancelar
                                 </button>
-                                <button type="submit" className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-bold hover:bg-indigo-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer">
+                                <button type="submit" className="flex-1 bg-violet-600 text-white py-2 rounded-2xl font-bold hover:bg-violet-700 transition flex justify-center items-center gap-2 shadow-sm cursor-pointer">
                                     <Save size={18} /> Guardar
                                 </button>
                             </div>
