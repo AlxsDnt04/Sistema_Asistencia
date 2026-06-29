@@ -142,7 +142,3 @@ Compruebe `backend/src/routes` para verbos y rutas exactas.
 - `backend/seed.js`
 - `mobile-app/App.js`, `mobile-app/src/`
 - `web-admin/index.html`, `web-admin/src/`, `web-admin/vite.config.js`
-
----
-
-Si quieres, puedo también crear un `.env.example` en `backend/` con las variables detectadas o ajustar este README con detalles exactos extraídos de `backend/src/models/index.js` y `backend/index.js`.
